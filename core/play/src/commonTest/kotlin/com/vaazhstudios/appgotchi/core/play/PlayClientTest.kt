@@ -50,6 +50,40 @@ class PlayClientTest {
     }
 
     @Test
+    fun emptyNextPageTokenEndsPagination() = runTest {
+        var requests = 0
+        val engine = MockEngine {
+            requests++
+            respond(
+                """{"apps":[{"packageName":"com.example.posepal","displayName":"PosePal"}],"nextPageToken":""}""",
+                HttpStatusCode.OK, jsonHeaders,
+            )
+        }
+
+        val apps = PlayClient(HttpClient(engine), { "t" }).listApps()
+
+        assertEquals(1, apps.size)
+        assertEquals(1, requests)
+    }
+
+    @Test
+    fun repeatedPageTokenFailsInsteadOfLooping() = runTest {
+        var requests = 0
+        val engine = MockEngine {
+            requests++
+            check(requests <= 5) { "client kept paginating" }
+            respond(
+                """{"apps":[{"packageName":"com.example.posepal"}],"nextPageToken":"same"}""",
+                HttpStatusCode.OK, jsonHeaders,
+            )
+        }
+
+        assertFailsWith<IllegalStateException> { PlayClient(HttpClient(engine), { "t" }).listApps() }
+
+        assertEquals(2, requests)
+    }
+
+    @Test
     fun emptyAccountReturnsNoApps() = runTest {
         val engine = MockEngine { respond("{}", HttpStatusCode.OK, jsonHeaders) }
 

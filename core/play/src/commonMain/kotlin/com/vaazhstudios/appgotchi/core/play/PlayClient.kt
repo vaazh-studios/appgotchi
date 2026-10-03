@@ -23,6 +23,7 @@ class PlayClient(
 
     override suspend fun listApps(): List<StoreApp> {
         val apps = mutableListOf<StoreApp>()
+        val seenTokens = mutableSetOf<String>()
         var pageToken: String? = null
         do {
             val response = httpClient.get("$baseUrl/v1beta1/apps:search") {
@@ -34,7 +35,9 @@ class PlayClient(
             if (!response.status.isSuccess()) throw StoreApiException(store, response.status.value, body)
             val page = StoreJson.decodeFromString<SearchAppsResponse>(body)
             page.apps.mapTo(apps) { StoreApp(store, it.packageName, it.displayName ?: it.packageName, it.packageName) }
-            pageToken = page.nextPageToken
+            // An empty token means "no more pages"; a repeated one would loop forever
+            pageToken = page.nextPageToken?.takeUnless { it.isEmpty() }
+            pageToken?.let { check(seenTokens.add(it)) { "Repeated page token" } }
         } while (pageToken != null)
         return apps
     }
