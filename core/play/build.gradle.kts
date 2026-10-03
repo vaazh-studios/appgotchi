@@ -24,6 +24,13 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.core.data)
+            implementation(libs.cryptography.core)
+            implementation(libs.cryptography.provider.optimal)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
     }
 }
