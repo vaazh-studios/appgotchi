@@ -1,13 +1,35 @@
 package com.vaazhstudios.appgotchi.di
 
+import com.vaazhstudios.appgotchi.data.AppsRepository
+import com.vaazhstudios.appgotchi.data.CredentialStore
+import com.vaazhstudios.appgotchi.data.DefaultStoreClientFactory
+import com.vaazhstudios.appgotchi.data.KSafeCredentialStore
+import com.vaazhstudios.appgotchi.data.StoreClientFactory
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import org.koin.core.context.startKoin
+import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 val appModule = module {
+    single {
+        HttpClient {
+            install(HttpTimeout) {
+                connectTimeoutMillis = 15_000
+                requestTimeoutMillis = 30_000
+            }
+        }
+    }
+    single<StoreClientFactory> { DefaultStoreClientFactory(get()) }
+    single<CredentialStore> { KSafeCredentialStore(get()) }
+    single { AppsRepository(get(), get()) }
 }
 
-fun initKoin() {
+fun initKoin() = initKoin {}
+
+fun initKoin(config: KoinAppDeclaration) {
     startKoin {
-        modules(appModule)
+        config()
+        modules(appModule, platformModule)
     }
 }
