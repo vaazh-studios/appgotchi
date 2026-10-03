@@ -62,4 +62,22 @@ class AppStoreConnectClientTest {
         assertEquals(Store.AppStore, error.store)
         assertEquals(401, error.status)
     }
+
+    @Test
+    fun paginationLinkToAnotherHostIsRejectedWithoutSendingTheToken() = runTest {
+        val requested = mutableListOf<String>()
+        val engine = MockEngine { request ->
+            requested += request.url.toString()
+            respond(
+                """{"data":[],"links":{"self":"s","next":"https://evil.example.com/v1/apps?cursor=x"}}""",
+                HttpStatusCode.OK, jsonHeaders,
+            )
+        }
+        val client = AppStoreConnectClient(HttpClient(engine), { "secret-token" }, baseUrl = "https://api.example.com")
+
+        assertFailsWith<IllegalStateException> { client.listApps() }
+
+        assertEquals(1, requested.size)
+        assertEquals("api.example.com", requested.single().substringAfter("https://").substringBefore("/"))
+    }
 }
