@@ -20,4 +20,15 @@ kotlin {
             jvmTarget = JvmTarget.JVM_11
         }
     }
+
+    sourceSets {
+        commonMain.dependencies {
+            api(libs.kotlinx.coroutines.core)
+            api(libs.ktor.client.core)
+            api(libs.ktor.serialization.kotlinx.json)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+        }
+    }
 }
