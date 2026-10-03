@@ -46,12 +46,14 @@ actual fun FileDropZone(
 
             override fun onDrop(event: DragAndDropEvent): Boolean {
                 isDragging = false
-                val transferable = event.awtTransferable
-                if (!transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return false
-                val file = (transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
-                    ?.filterIsInstance<File>()
-                    ?.firstOrNull()
-                    ?: return false
+                // The transfer can fail (InvalidDnDOperationException, IOException, UnsupportedFlavorException); a bad drop is ignored
+                val file = runCatching {
+                    val transferable = event.awtTransferable
+                    if (!transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) return@runCatching null
+                    (transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
+                        ?.filterIsInstance<File>()
+                        ?.firstOrNull()
+                }.getOrNull() ?: return false
                 currentOnFileDropped(PlatformFile(file))
                 return true
             }

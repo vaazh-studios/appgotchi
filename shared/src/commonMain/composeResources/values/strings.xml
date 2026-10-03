@@ -14,7 +14,9 @@
     <string name="wizard_continue">Continue</string>
     <string name="wizard_back">Back</string>
     <string name="wizard_remove">Remove</string>
-    <string name="wizard_copy">Copy</string>
+    <string name="wizard_remove_file">Remove %1$s</string>
+    <string name="wizard_copy_email">Copy email</string>
+    <string name="wizard_copied">Copied</string>
     <string name="wizard_check_again">Check again</string>
     <string name="wizard_checking">Checking with %1$s…</string>
     <string name="wizard_drop_hint">Drop it here or click to choose it</string>
@@ -23,7 +25,7 @@
     <string name="wizard_trust_play">Stored in this device’s secure storage. Only ever sent to Google.</string>
 
     <string name="apple_step1_title">Create a team key</string>
-    <string name="apple_step1_body">In App Store Connect, open Users and Access, then Integrations. Generate a team key with the App Manager role. Apple lets you download it only once.</string>
+    <string name="apple_step1_body">In App Store Connect, open Users and Access, then Integrations. Generate a team key with the App Manager role, which Appgotchi will need for releases later. Creating team keys needs Admin or Account Holder access, and Apple lets you download each key only once.</string>
     <string name="apple_open_team_keys">Open Team Keys</string>
     <string name="apple_step2_title">Add your AuthKey file</string>
     <string name="apple_step2_body">Add the .p8 file you downloaded. Keep its original name so Appgotchi can read the Key ID.</string>
@@ -45,8 +47,8 @@
     <string name="play_file_label">Add the .json key file</string>
     <string name="play_file_added">Service account key added.</string>
     <string name="play_step3_title">Invite it in Play Console</string>
-    <string name="play_step3_body">Invite this email under Users and permissions with View app information (read-only). New permissions can take a few hours to apply.</string>
+    <string name="play_step3_body">Invite this email under Users and permissions with “View app information and download bulk reports (read-only)”. New permissions can take a few hours to apply.</string>
     <string name="play_open_console">Open Play Console</string>
     <string name="play_verify">Verify access</string>
-    <string name="play_waiting">The key works, but Google hasn’t applied the Play Console permissions yet. This can take a few hours, so check again later.</string>
+    <string name="play_waiting">The key works, but Google hasn’t applied the Play Console permissions yet. This can take a few hours. Keep this screen open and check again, or add the key again later.</string>
 </resources>

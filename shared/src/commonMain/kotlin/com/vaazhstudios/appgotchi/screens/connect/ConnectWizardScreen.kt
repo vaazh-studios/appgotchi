@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -36,12 +37,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -51,12 +60,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import appgotchi.shared.generated.resources.Res
 import appgotchi.shared.generated.resources.*
 import com.vaazhstudios.appgotchi.core.data.Store
+import com.vaazhstudios.appgotchi.data.MAX_KEY_FILE_BYTES
 import com.vaazhstudios.appgotchi.data.displayName
+import com.vaazhstudios.appgotchi.data.hasExtension
+import com.vaazhstudios.appgotchi.data.keyIdFromFileName
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.name
 import io.github.vinceglb.filekit.readString
+import io.github.vinceglb.filekit.size
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -80,27 +95,47 @@ fun ConnectWizardScreen(
         if (state.status == WizardStatus.Connected) onConnected()
     }
 
-    // Reads the picked/dropped file and hands it to the view model for the store currently shown
-    val onKeyFile: (PlatformFile) -> Unit = { file ->
+    // Checks the type and size before reading, hands the text to the view model for the given store
+    val onKeyFile: (PlatformFile, Store) -> Unit = { file, store ->
         scope.launch {
-            val text = runCatching { file.readString() }.getOrNull()
-            when {
-                text == null -> viewModel.onFileReadFailed()
-                viewModel.state.value.store == Store.AppStore -> viewModel.onAppleKeyFile(file.name, text)
-                else -> viewModel.onPlayKeyFile(file.name, text)
+            val deliver: (String, String) -> Unit =
+                if (store == Store.AppStore) viewModel::onAppleKeyFile else viewModel::onPlayKeyFile
+            val name = file.name
+            if (!hasExtension(name, if (store == Store.AppStore) "p8" else "json")) {
+                // The view model rejects a wrong type before it looks at the text
+                deliver(name, "")
+                return@launch
             }
+            val size = runCatching { file.size() }.getOrNull()
+            if (size == null) {
+                viewModel.onFileReadFailed()
+                return@launch
+            }
+            if (size > MAX_KEY_FILE_BYTES) {
+                viewModel.onFileTooLarge()
+                return@launch
+            }
+            val text = runCatching { file.readString() }.getOrNull()
+            if (text == null) viewModel.onFileReadFailed() else deliver(name, text)
         }
     }
-    // One launcher per type: Android can't filter unknown extensions like .p8, so the view model re-checks
+    // One launcher per type: Android can't filter unknown extensions like .p8, so the handler re-checks
     val p8Picker = rememberFilePickerLauncher(type = FileKitType.File(extensions = listOf("p8"))) { file ->
-        file?.let(onKeyFile)
+        file?.let { onKeyFile(it, Store.AppStore) }
     }
     val jsonPicker = rememberFilePickerLauncher(type = FileKitType.File(extensions = listOf("json"))) { file ->
-        file?.let(onKeyFile)
+        file?.let { onKeyFile(it, Store.GooglePlay) }
     }
+    // A drop goes to whichever store is shown when the file lands
+    val onDropped: (PlatformFile) -> Unit = { file -> onKeyFile(file, viewModel.state.value.store) }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp),
+        // safeDrawing covers the system bars, display cutout and keyboard, so Close and Verify stay reachable
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(
@@ -118,10 +153,17 @@ fun ConnectWizardScreen(
                 )
             }
             when (state.store) {
-                Store.AppStore -> AppStoreStep(state, viewModel, onPick = { p8Picker.launch() }, onDropped = onKeyFile)
-                Store.GooglePlay -> PlayStep(state, viewModel, onPick = { jsonPicker.launch() }, onDropped = onKeyFile)
+                Store.AppStore -> AppStoreStep(state, viewModel, onPick = { p8Picker.launch() }, onDropped = onDropped)
+                Store.GooglePlay -> PlayStep(state, viewModel, onPick = { jsonPicker.launch() }, onDropped = onDropped)
             }
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
+            state.error?.let {
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
             StatusNotice(state)
             Footer(state, viewModel)
             TrustNote(state.store)
@@ -167,7 +209,7 @@ private fun StepProgress(step: Int) {
 @Composable
 private fun StepHeading(title: StringResource, body: StringResource) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(title), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
         Text(stringResource(body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -206,7 +248,7 @@ private fun AppStoreStep(
                 onRemove = viewModel::removeAppleKeyFile,
             )
             if (state.appleKeyFile != null) {
-                val fromFileName = state.keyId.isNotBlank() && state.appleKeyFile.name.contains(state.keyId)
+                val fromFileName = keyIdFromFileName(state.appleKeyFile.name) == state.keyId
                 OutlinedTextField(
                     value = state.keyId,
                     onValueChange = viewModel::onKeyIdChange,
@@ -314,7 +356,10 @@ private fun KeyFileField(
                     Text(fileName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
-                TextButton(onClick = onRemove) { Text(stringResource(Res.string.wizard_remove)) }
+                val removeDescription = stringResource(Res.string.wizard_remove_file, fileName)
+                TextButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = removeDescription }) {
+                    Text(stringResource(Res.string.wizard_remove))
+                }
             }
         }
     }
@@ -324,6 +369,13 @@ private fun KeyFileField(
 private fun EmailRow(email: String) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(2_000)
+            copied = false
+        }
+    }
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
@@ -337,8 +389,22 @@ private fun EmailRow(email: String) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = { scope.launch { clipboard.setClipEntry(plainTextClipEntry(email)) } }) {
-                Text(stringResource(Res.string.wizard_copy))
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        // The desktop clipboard can be locked by another app; a failed copy just shows no confirmation
+                        try {
+                            clipboard.setClipEntry(plainTextClipEntry(email))
+                            copied = true
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            copied = false
+                        }
+                    }
+                },
+            ) {
+                Text(stringResource(if (copied) Res.string.wizard_copied else Res.string.wizard_copy_email))
             }
         }
     }
