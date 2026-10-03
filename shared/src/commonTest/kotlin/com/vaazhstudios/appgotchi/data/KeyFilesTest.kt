@@ -21,7 +21,7 @@ class KeyFilesTest {
 
     @Test
     fun cleaningStripsByteOrderMarkAndWhitespace() {
-        assertEquals("-----BEGIN PRIVATE KEY-----", cleanKeyFileText("﻿  -----BEGIN PRIVATE KEY-----\n\n"))
+        assertEquals("-----BEGIN PRIVATE KEY-----", cleanKeyFileText("\uFEFF  -----BEGIN PRIVATE KEY-----\n\n"))
     }
 
     @Test
