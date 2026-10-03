@@ -36,6 +36,13 @@ class AppsRepositoryTest {
     }
 
     @Test
+    fun duplicateAppIdsWithinAStoreAreListedOnce() = runTest {
+        val repository = AppsRepository(bothStores, factory(apple = { listOf(appleApp, appleApp) }))
+
+        assertEquals(listOf(appleApp), repository.loadSections()[0].apps)
+    }
+
+    @Test
     fun aFailingStoreGetsAnErrorWithoutHidingTheOther() = runTest {
         val repository = AppsRepository(bothStores, factory(apple = { throw StoreApiException(Store.AppStore, 401, "") }))
 

@@ -45,7 +45,7 @@ class AppsRepository(
             )
         }
         return try {
-            StoreSection(store, createClient(credentials).listApps(), errorMessage = null)
+            StoreSection(store, createClient(credentials).listApps().distinctBy { it.id }, errorMessage = null)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
