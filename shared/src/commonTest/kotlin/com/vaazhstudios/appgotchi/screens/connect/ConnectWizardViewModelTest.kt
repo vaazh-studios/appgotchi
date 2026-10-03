@@ -4,9 +4,11 @@ import com.vaazhstudios.appgotchi.core.apple.AppStoreConnectCredentials
 import com.vaazhstudios.appgotchi.core.data.Store
 import com.vaazhstudios.appgotchi.core.data.StoreApiException
 import com.vaazhstudios.appgotchi.core.data.StoreApp
+import com.vaazhstudios.appgotchi.core.data.StoreClient
 import com.vaazhstudios.appgotchi.data.FakeCredentialStore
 import com.vaazhstudios.appgotchi.data.FakeStoreClient
 import com.vaazhstudios.appgotchi.data.FakeStoreClientFactory
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -18,6 +20,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -30,6 +33,7 @@ class ConnectWizardViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private val playApp = StoreApp(Store.GooglePlay, "com.example.posepal", "PosePal", "com.example.posepal")
+    private val pem = "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----"
     private val serviceAccountJson =
         """{"type":"service_account","client_email":"appgotchi@project.iam.gserviceaccount.com","private_key":"x"}"""
 
@@ -55,10 +59,10 @@ class ConnectWizardViewModelTest {
     fun appleKeyIdIsReadFromTheFileNameAndTextIsCleaned() {
         val vm = viewModel()
 
-        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", "﻿-----BEGIN PRIVATE KEY-----\n")
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", "\uFEFF$pem\n")
 
         assertEquals("7XK2M9Q4TB", vm.state.value.keyId)
-        assertEquals("-----BEGIN PRIVATE KEY-----", vm.state.value.appleKeyFile?.text)
+        assertEquals(pem, vm.state.value.appleKeyFile?.text)
     }
 
     @Test
@@ -96,20 +100,20 @@ class ConnectWizardViewModelTest {
     fun appleKeyIsVerifiedThenSaved() = runTest {
         val store = FakeCredentialStore()
         val vm = viewModel(store)
-        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", "pem")
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
         vm.onIssuerIdChange("  issuer-1  ")
 
         vm.verify()
 
         assertEquals(WizardStatus.Connected, vm.state.value.status)
-        assertEquals(AppStoreConnectCredentials("issuer-1", "7XK2M9Q4TB", "pem"), store.apple)
+        assertEquals(AppStoreConnectCredentials("issuer-1", "7XK2M9Q4TB", pem), store.apple)
     }
 
     @Test
     fun rejectedAppleKeyShowsAnErrorAndIsNotSaved() = runTest {
         val store = FakeCredentialStore()
         val vm = viewModel(store, apple = { throw StoreApiException(Store.AppStore, 401, "") })
-        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", "pem")
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
         vm.onIssuerIdChange("issuer-1")
 
         vm.verify()
@@ -176,7 +180,7 @@ class ConnectWizardViewModelTest {
     @Test
     fun switchingStoreReturnsToTheFirstStep() {
         val vm = viewModel()
-        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", "pem")
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
         vm.next()
         vm.next()
 
@@ -194,4 +198,134 @@ class ConnectWizardViewModelTest {
 
         assertEquals("Couldn't read that file. Try choosing it again.", vm.state.value.error)
     }
+
+    @Test
+    fun appleFileWithoutAPrivateKeyIsRejectedAndNotStored() {
+        val vm = viewModel()
+
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", "just some text")
+
+        assertNull(vm.state.value.appleKeyFile)
+        assertEquals(
+            "This .p8 file isn't a valid App Store Connect private key. Download the key again from App Store Connect.",
+            vm.state.value.error,
+        )
+    }
+
+    @Test
+    fun wrongAppleFileTypeIsRejectedBeforeTheTextIsLookedAt() {
+        val vm = viewModel()
+
+        vm.onAppleKeyFile("notes.txt", "")
+
+        assertEquals("That's not a .p8 file. Choose the AuthKey file you downloaded from App Store Connect.", vm.state.value.error)
+    }
+
+    @Test
+    fun malformedPlayTextShowsAReadableError() {
+        val vm = viewModel()
+        vm.selectStore(Store.GooglePlay)
+
+        vm.onPlayKeyFile("key.json", "not json")
+
+        assertNull(vm.state.value.playKeyFile)
+        assertEquals(
+            "This isn't a Google service account key. Download a JSON key for a service account from Google Cloud.",
+            vm.state.value.error,
+        )
+    }
+
+    @Test
+    fun oversizedFileShowsAReadableError() {
+        val vm = viewModel()
+
+        vm.onFileTooLarge()
+
+        assertEquals("That file is too large to be a key file. Choose the file you downloaded.", vm.state.value.error)
+    }
+
+    @Test
+    fun keyFileToStringRedactsTheText() {
+        val keyFile = KeyFile("AuthKey_7XK2M9Q4TB.p8", "super-secret")
+
+        assertEquals("KeyFile(name=AuthKey_7XK2M9Q4TB.p8, text=***)", keyFile.toString())
+    }
+
+    @Test
+    fun cannotVerifyOnceConnected() = runTest {
+        val vm = viewModel()
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+        vm.onIssuerIdChange("issuer-1")
+        vm.verify()
+
+        assertEquals(WizardStatus.Connected, vm.state.value.status)
+        assertFalse(vm.state.value.canVerify)
+    }
+
+    @Test
+    fun selectingTheCurrentStoreKeepsTheStep() {
+        val vm = viewModel()
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+        vm.next()
+
+        vm.selectStore(Store.AppStore)
+
+        assertEquals(1, vm.state.value.step)
+    }
+
+    @Test
+    fun removingTheAppleFileClearsAKeyIdReadFromItsName() {
+        val vm = viewModel()
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+
+        vm.removeAppleKeyFile()
+
+        assertNull(vm.state.value.appleKeyFile)
+        assertEquals("", vm.state.value.keyId)
+    }
+
+    @Test
+    fun removingTheAppleFileKeepsAKeyIdTheUserTyped() {
+        val vm = viewModel()
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+        vm.onKeyIdChange("ABC123")
+
+        vm.removeAppleKeyFile()
+
+        assertEquals("ABC123", vm.state.value.keyId)
+    }
+
+    @Test
+    fun editsAreIgnoredWhileVerifying() {
+        val gate = CompletableDeferred<List<StoreApp>>()
+        val vm = ConnectWizardViewModel(
+            FakeCredentialStore(),
+            FakeStoreClientFactory(GatedStoreClient(Store.AppStore, gate), GatedStoreClient(Store.GooglePlay, gate)),
+        )
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+        vm.onIssuerIdChange("issuer-1")
+        vm.verify()
+        val verifying = vm.state.value
+        assertEquals(WizardStatus.Verifying, verifying.status)
+
+        vm.onAppleKeyFile("AuthKey_OTHER.p8", pem)
+        vm.removeAppleKeyFile()
+        vm.onKeyIdChange("CHANGED")
+        vm.onIssuerIdChange("changed")
+        vm.onPlayKeyFile("key.json", serviceAccountJson)
+        vm.removePlayKeyFile()
+        vm.onFileReadFailed()
+        vm.onFileTooLarge()
+
+        assertEquals(verifying, vm.state.value)
+        gate.complete(emptyList())
+        assertNotEquals(WizardStatus.Verifying, vm.state.value.status)
+    }
+}
+
+private class GatedStoreClient(
+    override val store: Store,
+    private val gate: CompletableDeferred<List<StoreApp>>,
+) : StoreClient {
+    override suspend fun listApps() = gate.await()
 }
