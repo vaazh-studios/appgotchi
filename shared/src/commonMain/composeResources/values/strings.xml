@@ -4,6 +4,7 @@
     <string name="today_empty_title">No stores connected yet</string>
     <string name="today_empty_body">Connect App Store Connect or Google Play to start keeping your apps alive.</string>
     <string name="today_connect_button">Connect a store</string>
+    <string name="today_refresh">Refresh</string>
     <string name="today_no_apps">No apps in this account yet.</string>
     <string name="connect_title">Connect stores</string>
     <string name="connect_back">Back</string>

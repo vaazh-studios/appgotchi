@@ -55,4 +55,19 @@ class TodayViewModelTest {
 
         assertEquals(TodayUiState.Loaded(listOf(StoreSection(Store.AppStore, listOf(app), null))), viewModel.state.value)
     }
+
+    @Test
+    fun manualRefreshReadsTheStoresAgain() = runTest {
+        var apps = listOf(app)
+        val store = FakeCredentialStore(apple = AppStoreConnectCredentials("i", "k", "p"))
+        val client = FakeStoreClient(Store.AppStore) { apps }
+        val viewModel = TodayViewModel(AppsRepository(store, FakeStoreClientFactory(client, FakeStoreClient(Store.GooglePlay) { emptyList() })))
+        assertEquals(TodayUiState.Loaded(listOf(StoreSection(Store.AppStore, listOf(app), null))), viewModel.state.value)
+
+        val newApp = StoreApp(Store.AppStore, "2", "Snaplingo", "com.example.snaplingo")
+        apps = listOf(app, newApp)
+        viewModel.refresh()
+
+        assertEquals(TodayUiState.Loaded(listOf(StoreSection(Store.AppStore, listOf(app, newApp), null))), viewModel.state.value)
+    }
 }

@@ -2,6 +2,7 @@ package com.vaazhstudios.appgotchi.screens.today
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import appgotchi.shared.generated.resources.today_connect_button
 import appgotchi.shared.generated.resources.today_empty_body
 import appgotchi.shared.generated.resources.today_empty_title
 import appgotchi.shared.generated.resources.today_no_apps
+import appgotchi.shared.generated.resources.today_refresh
 import com.vaazhstudios.appgotchi.data.displayName
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -67,7 +69,10 @@ fun TodayScreen(
             item {
                 Column(Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(vertical = 16.dp)) {
                     Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.headlineLarge)
-                    TextButton(onClick = onConnect) { Text(stringResource(Res.string.today_connect_button)) }
+                    Row {
+                        TextButton(onClick = onConnect) { Text(stringResource(Res.string.today_connect_button)) }
+                        TextButton(onClick = viewModel::refresh) { Text(stringResource(Res.string.today_refresh)) }
+                    }
                 }
             }
             current.sections.forEach { section ->
