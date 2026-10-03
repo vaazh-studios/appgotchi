@@ -8,7 +8,18 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.vaazhstudios.appgotchi.screens.connect.ConnectScreen
 import com.vaazhstudios.appgotchi.screens.today.TodayScreen
+import kotlinx.serialization.Serializable
+
+@Serializable
+object TodayDestination
+
+@Serializable
+object ConnectDestination
 
 @Composable
 fun App() {
@@ -16,7 +27,20 @@ fun App() {
         colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
     ) {
         Surface(modifier = Modifier.fillMaxSize()) {
-            TodayScreen()
+            val navController = rememberNavController()
+            NavHost(navController = navController, startDestination = TodayDestination) {
+                composable<TodayDestination> {
+                    TodayScreen(onConnect = { navController.navigate(ConnectDestination) })
+                }
+                composable<ConnectDestination> {
+                    // Typed pop is a no-op if Connect is already gone, so "Back" racing a
+                    // finished verification can't pop the Today screen too
+                    ConnectScreen(
+                        onConnected = { navController.popBackStack<ConnectDestination>(inclusive = true) },
+                        onBack = { navController.popBackStack<ConnectDestination>(inclusive = true) },
+                    )
+                }
+            }
         }
     }
 }
