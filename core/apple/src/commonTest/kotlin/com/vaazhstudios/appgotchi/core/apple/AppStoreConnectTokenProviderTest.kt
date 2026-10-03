@@ -76,7 +76,7 @@ class AppStoreConnectTokenProviderTest {
         val error = assertFailsWith<InvalidCredentialsException> { provider.token() }
 
         assertEquals(
-            "This isn't a valid App Store Connect private key. Paste the whole .p8 file, including the BEGIN and END lines.",
+            "This .p8 file isn't a valid App Store Connect private key. Download the key again from App Store Connect.",
             error.message,
         )
     }
