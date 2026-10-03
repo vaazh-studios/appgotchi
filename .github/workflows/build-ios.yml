@@ -20,5 +20,7 @@ jobs:
           java-version: 21
       - name: Set Xcode version
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+      - name: Unit tests
+        run: ./gradlew :core:apple:iosSimulatorArm64Test :core:play:iosSimulatorArm64Test :shared:iosSimulatorArm64Test --stacktrace
       - name: iOS debug build
         run: cd iosApp && xcodebuild -scheme iosApp -configuration Debug -sdk iphonesimulator -arch arm64 CODE_SIGNING_ALLOWED='NO'

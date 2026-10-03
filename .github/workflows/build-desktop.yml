@@ -18,5 +18,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      - name: Unit tests
+        run: ./gradlew :core:data:jvmTest :core:apple:jvmTest :core:play:jvmTest :shared:jvmTest --stacktrace
       - name: Desktop debug build
         run: ./gradlew :desktopApp:assemble --stacktrace
