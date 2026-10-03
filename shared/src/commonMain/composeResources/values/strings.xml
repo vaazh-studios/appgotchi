@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<resources>
+    <string name="app_name">Appgotchi</string>
+    <string name="today_empty_title">No stores connected yet</string>
+    <string name="today_empty_body">Connect App Store Connect or Google Play to start keeping your apps alive.</string>
+</resources>
