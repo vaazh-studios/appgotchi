@@ -3,7 +3,8 @@
 Appgotchi handles App Store Connect API keys and Google Play service account keys. Our rules:
 
 - **Keys never leave your device** except in requests to Apple (`api.appstoreconnect.apple.com`) and Google (`*.googleapis.com`).
-- **Keys are stored in the platform keychain**: Keychain on iOS/macOS, Android Keystore, Windows Credential Manager, Secret Service on Linux.
+- **Keys are stored with the platform's secure storage when it is available**: Keychain on iOS/macOS, Android Keystore, Windows DPAPI (tied to your Windows user account), Secret Service on Linux.
+  - On desktops without a usable OS store (for example Linux without a running keyring), Appgotchi falls back to software key custody: your keys are encrypted with a key that is stored in the app's data folder, without OS protection. Anyone who can read your user's files can then recover them. An in-app warning for this case is planned.
 - **No Appgotchi server, no analytics, no telemetry.**
 - **Keys are never logged.** Credential types redact themselves in `toString()`.
 

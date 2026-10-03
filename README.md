@@ -4,13 +4,13 @@
 
 Appgotchi is a free, open-source companion for indie app developers. It puts **App Store Connect** and **Google Play Console** in one place — releases, reviews, revenue, vitals and testing — on **Android, iOS, macOS, Windows and Linux**.
 
-> 🚧 Early development. Nothing works yet — star the repo to follow along.
+> 🚧 Early development. Milestone 1 works: connect your App Store Connect and Google Play keys and list your apps on Android, iOS and desktop. Dashboards come next — star the repo to follow along.
 
 ## Why
 
 - Apple's and Google's consoles are slow, separate, and painful on a phone.
 - Existing tools are Apple-only, Mac-only, or paid.
-- Appgotchi is **local-first**: your API keys stay in your device's keychain and are only ever sent to Apple and Google. There is no Appgotchi server.
+- Appgotchi is **local-first**: your API keys stay in your device's secure storage and are only ever sent to Apple and Google. There is no Appgotchi server.
 
 ## Planned features
 
