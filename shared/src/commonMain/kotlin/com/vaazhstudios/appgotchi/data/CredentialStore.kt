@@ -17,27 +17,28 @@ interface CredentialStore {
     suspend fun savePlay(credentials: PlayCredentials)
 }
 
-class KSafeCredentialStore(private val ksafe: KSafe) : CredentialStore {
+// Lazy so a KSafe construction failure surfaces inside the guarded reads and saves, not at launch
+class KSafeCredentialStore(private val ksafe: Lazy<KSafe>) : CredentialStore {
     private val _changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     override val changes: Flow<Unit> = _changes.asSharedFlow()
 
     override suspend fun appStoreConnect(): AppStoreConnectCredentials? =
-        ksafe.get<String?>(APP_STORE_CONNECT_KEY, null)
+        ksafe.value.get<String?>(APP_STORE_CONNECT_KEY, null)
             ?.let { StoreJson.decodeFromString<StoredAppStoreConnectKey>(it) }
             ?.let { AppStoreConnectCredentials(it.issuerId, it.keyId, it.privateKeyPem) }
 
     override suspend fun saveAppStoreConnect(credentials: AppStoreConnectCredentials) {
         // One value, one write: a partial save can never mix fields from two keys
         val stored = StoredAppStoreConnectKey(credentials.issuerId, credentials.keyId, credentials.privateKeyPem)
-        ksafe.put(APP_STORE_CONNECT_KEY, StoreJson.encodeToString(StoredAppStoreConnectKey.serializer(), stored))
+        ksafe.value.put(APP_STORE_CONNECT_KEY, StoreJson.encodeToString(StoredAppStoreConnectKey.serializer(), stored))
         _changes.tryEmit(Unit)
     }
 
     override suspend fun play(): PlayCredentials? =
-        ksafe.get<String?>(PLAY_SERVICE_ACCOUNT, null)?.let(::PlayCredentials)
+        ksafe.value.get<String?>(PLAY_SERVICE_ACCOUNT, null)?.let(::PlayCredentials)
 
     override suspend fun savePlay(credentials: PlayCredentials) {
-        ksafe.put(PLAY_SERVICE_ACCOUNT, credentials.serviceAccountJson)
+        ksafe.value.put(PLAY_SERVICE_ACCOUNT, credentials.serviceAccountJson)
         _changes.tryEmit(Unit)
     }
 
