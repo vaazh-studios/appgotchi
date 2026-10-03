@@ -3,4 +3,18 @@
     <string name="app_name">Appgotchi</string>
     <string name="today_empty_title">No stores connected yet</string>
     <string name="today_empty_body">Connect App Store Connect or Google Play to start keeping your apps alive.</string>
+    <string name="today_connect_button">Connect a store</string>
+    <string name="today_no_apps">No apps in this account yet.</string>
+    <string name="connect_title">Connect stores</string>
+    <string name="connect_back">Back</string>
+    <string name="connect_privacy_note">Keys are stored in this device\'s secure storage and are only ever sent to Apple and Google.</string>
+    <string name="connect_apple_title">App Store Connect</string>
+    <string name="connect_apple_help">Create a key in App Store Connect → Users and Access → Integrations. The App Manager role is enough.</string>
+    <string name="connect_apple_issuer">Issuer ID</string>
+    <string name="connect_apple_key_id">Key ID</string>
+    <string name="connect_apple_private_key">Private key (.p8 file contents)</string>
+    <string name="connect_play_title">Google Play</string>
+    <string name="connect_play_help">Create a service account key (JSON) in Google Cloud, enable the Google Play Developer Reporting API, and invite the service account email in Play Console → Users and permissions.</string>
+    <string name="connect_play_json">Service account JSON</string>
+    <string name="connect_button">Verify and connect</string>
 </resources>

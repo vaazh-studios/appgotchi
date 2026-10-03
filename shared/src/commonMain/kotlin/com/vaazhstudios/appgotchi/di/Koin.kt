@@ -5,9 +5,11 @@ import com.vaazhstudios.appgotchi.data.CredentialStore
 import com.vaazhstudios.appgotchi.data.DefaultStoreClientFactory
 import com.vaazhstudios.appgotchi.data.KSafeCredentialStore
 import com.vaazhstudios.appgotchi.data.StoreClientFactory
+import com.vaazhstudios.appgotchi.screens.connect.ConnectViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import org.koin.core.context.startKoin
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
@@ -23,6 +25,7 @@ val appModule = module {
     single<StoreClientFactory> { DefaultStoreClientFactory(get()) }
     single<CredentialStore> { KSafeCredentialStore(get()) }
     single { AppsRepository(get(), get()) }
+    viewModelOf(::ConnectViewModel)
 }
 
 fun initKoin() = initKoin {}
