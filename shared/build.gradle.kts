@@ -72,6 +72,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
 
             implementation(libs.ksafe)
+            implementation(libs.filekit.dialogs.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
