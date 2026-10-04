@@ -7,7 +7,8 @@ private val issuerId = Regex("""^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0
 private val longBase64Run = Regex("""[A-Za-z0-9+/]{40,}""")
 
 /** True for pasted PEM key text, a bare key body or a whole service account file. */
-fun looksLikePrivateKey(text: String): Boolean = "PRIVATE KEY" in text || longBase64Run.containsMatchIn(text)
+fun looksLikePrivateKey(text: String): Boolean =
+    "PRIVATE KEY" in text || (!text.trimStart().startsWith("http", ignoreCase = true) && longBase64Run.containsMatchIn(text))
 
 fun developerAccountIdProblem(text: String): String? {
     val value = text.trim()

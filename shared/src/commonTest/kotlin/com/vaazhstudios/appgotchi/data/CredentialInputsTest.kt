@@ -24,6 +24,7 @@ class CredentialInputsTest {
         assertFalse(looksLikePrivateKey("1a2b3c4d-1a2b-1a2b-1a2b-1a2b3c4d5e6f"))
         assertFalse(looksLikePrivateKey("12345678901234567891"))
         assertFalse(looksLikePrivateKey("ABCDE12345"))
+        assertFalse(looksLikePrivateKey("https://play.google.com/console/u/0/developers/1234567890123456789/app-list"))
     }
 
     @Test
