@@ -1,11 +1,8 @@
 package com.vaazhstudios.appgotchi
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -13,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.vaazhstudios.appgotchi.screens.connect.ConnectWizardScreen
 import com.vaazhstudios.appgotchi.screens.today.TodayScreen
+import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -23,10 +21,8 @@ object ConnectDestination
 
 @Composable
 fun App() {
-    MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-    ) {
-        Surface(modifier = Modifier.fillMaxSize()) {
+    AppgotchiTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val navController = rememberNavController()
             NavHost(navController = navController, startDestination = TodayDestination) {
                 composable<TodayDestination> {

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" class="bg-white antialiased dark:bg-zinc-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Appgotchi — Theme (prototype)</title>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @custom-variant dark (&:where(.dark, .dark *));
+      @theme {
+        --font-sans: InterVariable, ui-sans-serif, system-ui, sans-serif;
+        --font-sans--font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      }
+      /* Brand accent: lime, used sparingly (logo dot, progress, focus, live status) */
+      :root { --accent: var(--color-lime-500); --accent-ink: var(--color-lime-700); --accent-on: var(--color-zinc-950); }
+      .dark { --accent-ink: var(--color-lime-400); }
+    </style>
+  </head>
+  <body class="font-sans text-zinc-950 dark:text-white">
+
+    <div class="isolate flex min-h-dvh flex-col">
+      <header class="border-b border-zinc-950/5 dark:border-white/10">
+        <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <p class="flex items-center gap-2 text-base/7 font-semibold sm:text-sm/6">
+            <span class="size-2.5 shrink-0 rounded-full bg-(--accent)" aria-hidden="true"></span>
+            Appgotchi
+          </p>
+          <button type="button" id="mode" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 ring-1 ring-zinc-950/10 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5">Dark preview</button>
+        </div>
+      </header>
+
+      <main class="flex-1">
+        <div class="mx-auto grid max-w-6xl gap-12 px-4 py-10 sm:px-6 lg:grid-cols-[3fr_2fr] lg:gap-16">
+          <!-- Today -->
+          <section class="flex min-w-0 flex-col gap-6" aria-labelledby="today-title">
+            <div class="flex items-end justify-between gap-4">
+              <div class="flex flex-col gap-1">
+                <h1 id="today-title" class="text-2xl font-semibold tracking-tight">Today</h1>
+                <p class="text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">4 apps across 2 stores. Updated 2 minutes ago.</p>
+              </div>
+              <div class="flex shrink-0 gap-2">
+                <button type="button" class="rounded-lg px-3 py-2 text-base/6 font-medium ring-1 ring-zinc-950/10 hover:bg-zinc-950/5 sm:py-1.5 sm:text-sm/6 dark:ring-white/15 dark:hover:bg-white/5">Refresh</button>
+                <button type="button" class="rounded-lg bg-zinc-950 px-3 py-2 text-base/6 font-medium text-white hover:bg-zinc-800 sm:py-1.5 sm:text-sm/6 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200">Connect a store</button>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-8" data-list="cards"></div>
+          </section>
+
+          <!-- Connect wizard (step 2) -->
+          <section class="flex flex-col gap-6 lg:border-l lg:border-zinc-950/5 lg:pl-16 dark:lg:border-white/10" aria-labelledby="wizard-title">
+            <div class="grid grid-cols-2 rounded-lg bg-zinc-950/5 p-0.5 dark:bg-white/5">
+              <span class="rounded-md bg-white py-1.5 text-center text-base/6 font-medium shadow-xs ring-1 ring-zinc-950/5 sm:py-1 sm:text-sm/6 dark:bg-zinc-800 dark:shadow-none dark:ring-white/10">App Store</span>
+              <span class="py-1.5 text-center text-base/6 font-medium text-zinc-500 sm:py-1 sm:text-sm/6 dark:text-zinc-400">Google Play</span>
+            </div>
+            <div class="flex flex-col gap-3">
+              <div class="flex gap-1.5" aria-hidden="true">
+                <span class="h-1 flex-1 rounded-full bg-(--accent)"></span>
+                <span class="h-1 flex-1 rounded-full bg-(--accent)"></span>
+                <span class="h-1 flex-1 rounded-full bg-zinc-950/10 dark:bg-white/10"></span>
+              </div>
+              <p class="text-base/7 text-zinc-500 tabular-nums sm:text-sm/6 dark:text-zinc-400">App Store Connect · Step 2 of 3</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <h2 id="wizard-title" class="text-xl font-semibold tracking-tight text-balance">Add your AuthKey file</h2>
+              <p class="max-w-[56ch] text-base/7 text-pretty text-zinc-600 sm:text-sm/6 dark:text-zinc-400">Add the .p8 file you downloaded. Keep its original name so Appgotchi can read the Key ID.</p>
+            </div>
+            <div class="flex items-center gap-3 rounded-lg p-3 ring-1 ring-zinc-950/10 dark:ring-white/10">
+              <div class="flex min-w-0 flex-1 flex-col">
+                <p class="truncate text-base/6 font-medium sm:text-sm/6">AuthKey_7XK2M9Q4TB.p8</p>
+                <p class="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">Key ID <span class="font-mono text-zinc-950 dark:text-white">7XK2M9Q4TB</span> read from the file name.</p>
+              </div>
+              <button type="button" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:hover:bg-white/5">Remove</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="key-id" class="text-base/6 font-medium sm:text-sm/6">Key ID</label>
+              <input id="key-id" name="key-id" value="7XK2M9Q4TB" class="rounded-lg bg-white px-3 py-2 font-mono text-base/6 ring-1 ring-zinc-950/10 focus:outline-2 focus:-outline-offset-1 focus:outline-(--accent) sm:py-1.5 sm:text-sm/6 dark:bg-white/5 dark:ring-white/10" />
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <button type="button" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:hover:bg-white/5">Back</button>
+              <button type="button" class="rounded-lg bg-zinc-950 px-3 py-2 text-base/6 font-medium text-white hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent) sm:py-1.5 sm:text-sm/6 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200">Continue</button>
+            </div>
+            <p class="text-base/6 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">Stored in this device’s secure storage. Only ever sent to Apple.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const sections = [
+        {
+          store: 'App Store Connect',
+          apps: [
+            { name: 'Vocabloot', id: 'com.tntstudios.snaplingo', version: '3.4', status: 'Ready for Sale', tone: 'live' },
+            { name: 'PosePal', id: 'com.tntstudios.posepal', version: '2.1', status: 'In Review', tone: 'pending' },
+          ],
+        },
+        {
+          store: 'Google Play',
+          apps: [
+            { name: 'Vocabloot', id: 'com.tntstudios.snaplingo', version: '3.4', status: 'Production · 100%', tone: 'live' },
+            { name: 'PosePal', id: 'com.tntstudios.posepal', version: '2.1', status: 'Rejected', tone: 'error' },
+          ],
+        },
+      ]
+      const dot = {
+        live: 'bg-(--accent)',
+        pending: 'bg-amber-500',
+        error: 'bg-red-500',
+      }
+      const icon = (name) =>
+        `<span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-zinc-950/5 text-base/6 font-semibold text-zinc-700 sm:size-8 sm:text-sm/6 dark:bg-white/10 dark:text-zinc-200">${name[0]}</span>`
+      const status = (a) =>
+        `<span class="flex shrink-0 items-center gap-2 text-base/6 text-zinc-600 sm:text-sm/6 dark:text-zinc-300"><span class="size-2 rounded-full ${dot[a.tone]}" aria-hidden="true"></span>${a.status}</span>`
+      const row = (a) => `
+        <div class="flex items-center gap-3">
+          ${icon(a.name)}
+          <div class="flex min-w-0 flex-1 flex-col">
+            <p class="truncate text-base/6 font-medium sm:text-sm/6">${a.name} <span class="font-normal text-zinc-500 tabular-nums dark:text-zinc-400">${a.version}</span></p>
+            <p class="truncate font-mono text-sm/6 text-zinc-500 sm:text-xs/5 dark:text-zinc-400">${a.id}</p>
+          </div>
+          ${status(a)}
+        </div>`
+
+      document.querySelector('[data-list="cards"]').innerHTML = sections
+        .map(
+          (s) => `<div class="flex flex-col gap-3">
+            <h2 class="text-base/6 font-medium text-zinc-500 sm:text-sm/6 dark:text-zinc-400">${s.store}</h2>
+            <div class="@container"><ul role="list" class="grid gap-3 @2xl:grid-cols-2">${s.apps
+              .map((a) => `<li class="rounded-xl p-4 ring-1 ring-zinc-950/10 dark:bg-white/2.5 dark:ring-white/10">${row(a)}</li>`)
+              .join('')}</ul></div>
+          </div>`,
+        )
+        .join('')
+
+      // Prototype-only preview control for checking dark mode
+      document.getElementById('mode').addEventListener('click', (e) => {
+        const dark = document.documentElement.classList.toggle('dark')
+        e.currentTarget.textContent = dark ? 'Light preview' : 'Dark preview'
+      })
+    </script>
+  </body>
+</html>
