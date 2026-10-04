@@ -12,3 +12,10 @@ The logos themselves are trademarks of their owners: App Store is a trademark
 of Apple Inc. and Google Play is a trademark of Google LLC. Appgotchi uses them
 only to identify which store a connection is for. Appgotchi is not affiliated
 with, sponsored by or endorsed by Apple or Google.
+
+Key and plus icons
+==================
+
+ic_key.xml and ic_add.xml are converted from Material Symbols 0.47.6
+(outlined, weight 400; https://github.com/google/material-design-icons),
+licensed under the Apache License 2.0, the same licence as Appgotchi (see LICENSE).

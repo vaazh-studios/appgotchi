@@ -55,8 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import appgotchi.shared.generated.resources.*
 import appgotchi.shared.generated.resources.Res
+import appgotchi.shared.generated.resources.ic_add
 import appgotchi.shared.generated.resources.ic_app_store
 import appgotchi.shared.generated.resources.ic_google_play
+import appgotchi.shared.generated.resources.ic_key
 import com.vaazhstudios.appgotchi.core.data.Store
 import com.vaazhstudios.appgotchi.data.MAX_KEY_FILE_BYTES
 import com.vaazhstudios.appgotchi.data.displayName
@@ -252,13 +254,13 @@ private fun AppleChoice(viewModel: ConnectWizardViewModel) {
         ChoiceCard(
             title = stringResource(Res.string.apple_choice_have_title),
             description = stringResource(Res.string.apple_choice_have_body),
-            badge = "1",
+            icon = painterResource(Res.drawable.ic_key),
             onClick = viewModel::chooseAppleQuick,
         )
         ChoiceCard(
             title = stringResource(Res.string.apple_choice_create_title),
             description = stringResource(Res.string.apple_choice_create_body),
-            badge = "3",
+            icon = painterResource(Res.drawable.ic_add),
             onClick = viewModel::chooseAppleGuided,
         )
     }

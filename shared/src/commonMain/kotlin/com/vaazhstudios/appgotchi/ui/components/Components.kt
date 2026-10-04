@@ -246,10 +246,9 @@ fun StepChecklist(items: List<ChecklistItem>, modifier: Modifier = Modifier) {
 fun ChoiceCard(
     title: String,
     description: String,
+    icon: Painter,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    badge: String = "",
-    icon: Painter? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
@@ -269,11 +268,7 @@ fun ChoiceCard(
                     .clearAndSetSemantics {},
                 contentAlignment = Alignment.Center,
             ) {
-                if (icon != null) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
-                } else {
-                    Text(badge, style = MaterialTheme.typography.titleSmall)
-                }
+                Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)

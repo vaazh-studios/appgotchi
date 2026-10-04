@@ -51,6 +51,6 @@ Requires JDK 17+, Android SDK, and Xcode (for iOS).
 
 The UI uses the [Inter](https://rsms.me/inter/) typeface, licensed under the SIL Open Font License (see [THIRD_PARTY_LICENSES/Inter-OFL.txt](THIRD_PARTY_LICENSES/Inter-OFL.txt)).
 
-The App Store and Google Play logos come from [Simple Icons](https://simpleicons.org) (CC0). App Store is a trademark of Apple Inc. and Google Play is a trademark of Google LLC; Appgotchi isn’t affiliated with or endorsed by either (see [THIRD_PARTY_LICENSES/Simple-Icons-CC0.txt](THIRD_PARTY_LICENSES/Simple-Icons-CC0.txt)).
+The App Store and Google Play logos come from [Simple Icons](https://simpleicons.org) (CC0). App Store is a trademark of Apple Inc. and Google Play is a trademark of Google LLC; Appgotchi isn’t affiliated with or endorsed by either (see [THIRD_PARTY_LICENSES/Icons.txt](THIRD_PARTY_LICENSES/Icons.txt)).
 
 Appgotchi is not affiliated with Apple, Google, or Bandai.
