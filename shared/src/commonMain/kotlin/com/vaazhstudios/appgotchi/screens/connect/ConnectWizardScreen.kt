@@ -60,6 +60,7 @@ import com.vaazhstudios.appgotchi.data.MAX_KEY_FILE_BYTES
 import com.vaazhstudios.appgotchi.data.displayName
 import com.vaazhstudios.appgotchi.data.hasExtension
 import com.vaazhstudios.appgotchi.data.keyIdFromFileName
+import com.vaazhstudios.appgotchi.data.usersAndPermissionsUrl
 import com.vaazhstudios.appgotchi.ui.components.AppCard
 import com.vaazhstudios.appgotchi.ui.components.ChecklistItem
 import com.vaazhstudios.appgotchi.ui.components.ChoiceCard
@@ -91,9 +92,6 @@ private const val CREATE_PROJECT_URL = "https://console.cloud.google.com/project
 private const val REPORTING_API_URL = "https://console.cloud.google.com/apis/library/playdeveloperreporting.googleapis.com"
 private const val ANDROID_PUBLISHER_API_URL = "https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com"
 private const val CREATE_SERVICE_ACCOUNT_URL = "https://console.cloud.google.com/iam-admin/serviceaccounts/create"
-
-private fun usersAndPermissionsUrl(developerAccountId: String) =
-    "https://play.google.com/console/u/0/developers/$developerAccountId/users-and-permissions"
 
 @Composable
 fun ConnectWizardScreen(

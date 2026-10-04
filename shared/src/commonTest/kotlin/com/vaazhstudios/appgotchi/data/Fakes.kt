@@ -5,6 +5,7 @@ import com.vaazhstudios.appgotchi.core.data.Store
 import com.vaazhstudios.appgotchi.core.data.StoreApp
 import com.vaazhstudios.appgotchi.core.data.StoreClient
 import com.vaazhstudios.appgotchi.core.play.PlayCredentials
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class FakeCredentialStore(
@@ -39,7 +40,13 @@ class FakeStoreClient(
     override val store: Store,
     private val result: () -> List<StoreApp>,
 ) : StoreClient {
-    override suspend fun listApps() = result()
+    /** When set, [listApps] suspends until it completes, so a test can hold a load in flight. */
+    var gate: CompletableDeferred<Unit>? = null
+
+    override suspend fun listApps(): List<StoreApp> {
+        gate?.await()
+        return result()
+    }
 }
 
 class FakeStoreClientFactory(

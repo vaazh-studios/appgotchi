@@ -1,7 +1,6 @@
 package com.vaazhstudios.appgotchi.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.InteractionSource
@@ -14,24 +13,30 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,32 +47,28 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import appgotchi.shared.generated.resources.Res
 import appgotchi.shared.generated.resources.app_name
-import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
-import org.jetbrains.compose.resources.stringResource
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
+import appgotchi.shared.generated.resources.component_collapsed
+import appgotchi.shared.generated.resources.component_expanded
 import appgotchi.shared.generated.resources.component_paste
+import appgotchi.shared.generated.resources.component_paste_into
+import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 private val ButtonPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
 
@@ -158,67 +159,6 @@ fun QuietButton(
     )
 }
 
-/** Pill-style switch between a few options (e.g. App Store / Google Play). */
-@Composable
-fun <T> SegmentedControl(
-    options: List<Pair<T, String>>,
-    selected: T,
-    onSelect: (T) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    val segmentShape = RoundedCornerShape(6.dp)
-    val emphasis = if (enabled) 1f else DisabledAlpha
-    // background(shape) rather than clip(), so the focus ring around a segment isn't cut off by the track
-    Row(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small)
-            .padding(2.dp)
-            .selectableGroup(),
-    ) {
-        options.forEach { (value, label) ->
-            val isSelected = value == selected
-            val interactionSource = remember { MutableInteractionSource() }
-            val selectedFill = AppgotchiTheme.colors.selectedSegment
-            val ringColor = MaterialTheme.colorScheme.outlineVariant
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRing(interactionSource, segmentShape)
-                    .clip(segmentShape)
-                    .then(
-                        if (isSelected) {
-                            Modifier
-                                .background(selectedFill.copy(alpha = selectedFill.alpha * emphasis))
-                                .border(1.dp, ringColor.copy(alpha = ringColor.alpha * emphasis), segmentShape)
-                        } else {
-                            Modifier
-                        },
-                    )
-                    .selectable(
-                        selected = isSelected,
-                        interactionSource = interactionSource,
-                        indication = LocalIndication.current,
-                        enabled = enabled,
-                        role = Role.Tab,
-                        onClick = { onSelect(value) },
-                    )
-                    .heightIn(min = 40.dp)
-                    .padding(vertical = 6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = (if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.secondary).let {
-                        it.copy(alpha = it.alpha * emphasis)
-                    },
-                )
-            }
-        }
-    }
-}
-
 /** Ringed card used for list items and grouped content. */
 @Composable
 fun AppCard(
@@ -286,7 +226,11 @@ fun StepChecklist(items: List<ChecklistItem>, modifier: Modifier = Modifier) {
                     }
                     if (item.url != null && item.linkLabel != null) {
                         // Opening a browser can fail (no handler); never crash over it
-                        SecondaryButton(onClick = { runCatching { uriHandler.openUri(item.url) } }) {
+                        val linkName = "${item.linkLabel.removeSuffix("↗").trim()}: ${item.text}"
+                        SecondaryButton(
+                            onClick = { runCatching { uriHandler.openUri(item.url) } },
+                            modifier = Modifier.semantics { contentDescription = linkName },
+                        ) {
                             Text("${item.linkLabel} ↗")
                         }
                     }
@@ -308,7 +252,7 @@ fun ChoiceCard(
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().focusRing(interactionSource, MaterialTheme.shapes.medium),
+        modifier = modifier.fillMaxWidth().focusRing(interactionSource, MaterialTheme.shapes.medium).semantics { role = Role.Button },
         shape = MaterialTheme.shapes.medium,
         color = AppgotchiTheme.colors.cardFill,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -351,6 +295,7 @@ fun PasteField(
 ) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
+    val pasteIntoLabel = stringResource(Res.string.component_paste_into, label)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         OutlinedTextField(
             value = value,
@@ -365,6 +310,7 @@ fun PasteField(
             trailingIcon = {
                 QuietButton(
                     onClick = { scope.launch { readClipboardText(clipboard)?.let { onValueChange(it.trim()) } } },
+                    modifier = Modifier.semantics { contentDescription = pasteIntoLabel },
                     enabled = enabled,
                 ) { Text(stringResource(Res.string.component_paste)) }
             },
@@ -385,6 +331,7 @@ fun PasteField(
 @Composable
 fun HelpDisclosure(title: String, body: String, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
+    val state = stringResource(if (expanded) Res.string.component_expanded else Res.string.component_collapsed)
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.small,
@@ -392,7 +339,13 @@ fun HelpDisclosure(title: String, body: String, modifier: Modifier = Modifier) {
         border = BorderStroke(1.dp, AppgotchiTheme.colors.pending.copy(alpha = 0.3f)),
     ) {
         Column(Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
-            QuietButton(onClick = { expanded = !expanded }) {
+            QuietButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.semantics {
+                    role = Role.Button
+                    stateDescription = state
+                },
+            ) {
                 Text(title, color = AppgotchiTheme.colors.onWarningContainer)
             }
             if (expanded) {

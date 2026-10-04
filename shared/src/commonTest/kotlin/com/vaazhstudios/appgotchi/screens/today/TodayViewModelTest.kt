@@ -10,6 +10,7 @@ import com.vaazhstudios.appgotchi.data.FakeCredentialStore
 import com.vaazhstudios.appgotchi.data.FakeStoreClient
 import com.vaazhstudios.appgotchi.data.FakeStoreClientFactory
 import com.vaazhstudios.appgotchi.data.StoreSection
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -114,5 +115,21 @@ class TodayViewModelTest {
 
         assertFalse(demo.enabled.value)
         assertEquals(TodayUiState.Loaded(listOf(StoreSection(Store.AppStore, listOf(app), null))), viewModel.state.value)
+    }
+
+    @Test
+    fun enablingTheDemoWhileALoadIsInFlightEndsOnDemoData() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val store = FakeCredentialStore(apple = AppStoreConnectCredentials("i", "k", "p"))
+        val client = FakeStoreClient(Store.AppStore) { listOf(app) }.apply { this.gate = gate }
+        val demo = DemoMode()
+        val viewModel = TodayViewModel(AppsRepository(store, FakeStoreClientFactory(client, FakeStoreClient(Store.GooglePlay) { emptyList() })), demo)
+        assertEquals(TodayUiState.Loading, viewModel.state.value)
+
+        demo.enable()
+        assertEquals(TodayUiState.Loaded(DemoData.sections, isDemo = true), viewModel.state.value)
+        gate.complete(Unit)
+
+        assertEquals(TodayUiState.Loaded(DemoData.sections, isDemo = true), viewModel.state.value)
     }
 }

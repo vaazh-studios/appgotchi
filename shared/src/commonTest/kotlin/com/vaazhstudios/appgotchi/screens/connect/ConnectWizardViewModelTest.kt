@@ -138,6 +138,9 @@ class ConnectWizardViewModelTest {
         vm.onPlayKeyFile("appgotchi-key.json", serviceAccountJson)
 
         assertEquals("appgotchi@project.iam.gserviceaccount.com", vm.state.value.serviceAccountEmail)
+        assertFalse(vm.state.value.canVerify)
+        vm.onDeveloperAccountIdChange("1234567890123456789")
+        repeat(5) { vm.next() }
         assertTrue(vm.state.value.canVerify)
     }
 
@@ -159,8 +162,7 @@ class ConnectWizardViewModelTest {
     fun playKeyThatSeesNoAppsWaitsWithoutSaving() = runTest {
         val store = FakeCredentialStore()
         val vm = viewModel(store, play = { emptyList() })
-        vm.chooseStore(Store.GooglePlay)
-        vm.onPlayKeyFile("appgotchi-key.json", serviceAccountJson)
+        goToPlayLastStep(vm)
 
         vm.verify()
 
@@ -173,8 +175,7 @@ class ConnectWizardViewModelTest {
         val store = FakeCredentialStore()
         var apps = emptyList<StoreApp>()
         val vm = viewModel(store, play = { apps })
-        vm.chooseStore(Store.GooglePlay)
-        vm.onPlayKeyFile("appgotchi-key.json", serviceAccountJson)
+        goToPlayLastStep(vm)
         vm.verify()
 
         apps = listOf(playApp)
@@ -379,6 +380,160 @@ class ConnectWizardViewModelTest {
             "That looks like your private key, so Appgotchi didn’t keep it. The Issuer ID is the short ID shown above the keys list.",
             vm.state.value.error,
         )
+    }
+
+    @Test
+    fun aPastedPrivateKeyIsNeverKeptInTheKeyIdField() {
+        val vm = viewModel()
+        vm.chooseStore(Store.AppStore)
+        vm.chooseAppleQuick()
+
+        vm.onKeyIdChange(pem)
+
+        assertEquals("", vm.state.value.keyId)
+        assertEquals(
+            "That looks like your private key, so Appgotchi didn’t keep it. The Key ID is the 10-character ID next to the key in App Store Connect.",
+            vm.state.value.error,
+        )
+    }
+
+    @Test
+    fun aTypedKeyIdIsKeptAndClearsTheError() {
+        val vm = viewModel()
+        vm.chooseStore(Store.AppStore)
+        vm.chooseAppleQuick()
+        vm.onKeyIdChange(pem)
+
+        vm.onKeyIdChange("7XK2M9Q4TB")
+
+        assertEquals("7XK2M9Q4TB", vm.state.value.keyId)
+        assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun chooseStoreDoesNothingOffTheChooser() {
+        val vm = viewModel()
+        vm.chooseStore(Store.AppStore)
+        val before = vm.state.value
+
+        vm.chooseStore(Store.GooglePlay)
+
+        assertEquals(before, vm.state.value)
+    }
+
+    @Test
+    fun appleChoicesDoNothingOffTheAppleChoiceScreen() {
+        val vm = viewModel()
+
+        vm.chooseAppleQuick()
+        vm.chooseAppleGuided()
+        assertEquals(WizardScreen.Chooser, vm.state.value.screen)
+
+        vm.chooseStore(Store.AppStore)
+        vm.chooseAppleQuick()
+        val quick = vm.state.value
+        vm.chooseAppleGuided()
+        vm.chooseAppleQuick()
+
+        assertEquals(WizardScreen.AppleQuick, quick.screen)
+        assertEquals(quick, vm.state.value)
+    }
+
+    @Test
+    fun playCanOnlyVerifyOnItsLastStep() {
+        val vm = viewModel()
+        vm.chooseStore(Store.GooglePlay)
+        vm.onDeveloperAccountIdChange("1234567890123456789")
+        repeat(3) { vm.next() }
+        vm.onPlayKeyFile("appgotchi-key.json", serviceAccountJson)
+
+        for (step in 3..4) {
+            assertEquals(step, vm.state.value.step)
+            assertFalse(vm.state.value.canVerify)
+            vm.next()
+        }
+        assertEquals(5, vm.state.value.step)
+        assertTrue(vm.state.value.canVerify)
+        vm.back()
+        vm.back()
+        vm.back()
+        for (step in 2 downTo 0) {
+            assertEquals(step, vm.state.value.step)
+            assertFalse(vm.state.value.canVerify)
+            vm.back()
+        }
+    }
+
+    @Test
+    fun navigationIsIgnoredWhileVerifying() {
+        val gate = CompletableDeferred<Unit>()
+        val vm = gatedAppleVerification(gate)
+        val verifying = vm.state.value
+        assertEquals(WizardStatus.Verifying, verifying.status)
+
+        vm.next()
+        vm.back()
+        vm.chooseStore(Store.GooglePlay)
+        vm.chooseAppleGuided()
+
+        assertEquals(verifying, vm.state.value)
+        gate.complete(Unit)
+        assertEquals(WizardStatus.Connected, vm.state.value.status)
+    }
+
+    @Test
+    fun backFromWaitingClearsTheWaitingStatus() = runTest {
+        val vm = viewModel(play = { emptyList() })
+        vm.chooseStore(Store.GooglePlay)
+        vm.onDeveloperAccountIdChange("1234567890123456789")
+        repeat(3) { vm.next() }
+        vm.onPlayKeyFile("appgotchi-key.json", serviceAccountJson)
+        repeat(2) { vm.next() }
+        vm.verify()
+        assertEquals(WizardStatus.Waiting, vm.state.value.status)
+
+        vm.back()
+
+        assertEquals(WizardStatus.Idle, vm.state.value.status)
+        assertEquals(4, vm.state.value.step)
+    }
+
+    @Test
+    fun backDoesNothingOnceConnected() = runTest {
+        val vm = viewModel()
+        vm.chooseStore(Store.AppStore)
+        vm.chooseAppleQuick()
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+        vm.onIssuerIdChange(issuer)
+        vm.verify()
+        val connected = vm.state.value
+        assertEquals(WizardStatus.Connected, connected.status)
+
+        vm.back()
+
+        assertEquals(connected, vm.state.value)
+    }
+
+    private fun goToPlayLastStep(vm: ConnectWizardViewModel) {
+        vm.chooseStore(Store.GooglePlay)
+        vm.onDeveloperAccountIdChange("1234567890123456789")
+        repeat(3) { vm.next() }
+        vm.onPlayKeyFile("appgotchi-key.json", serviceAccountJson)
+        repeat(2) { vm.next() }
+    }
+
+    private fun gatedAppleVerification(gate: CompletableDeferred<Unit>): ConnectWizardViewModel {
+        val apple = FakeStoreClient(Store.AppStore) { emptyList() }.apply { this.gate = gate }
+        val vm = ConnectWizardViewModel(
+            FakeCredentialStore(),
+            FakeStoreClientFactory(apple, FakeStoreClient(Store.GooglePlay) { emptyList() }),
+        )
+        vm.chooseStore(Store.AppStore)
+        vm.chooseAppleQuick()
+        vm.onAppleKeyFile("AuthKey_7XK2M9Q4TB.p8", pem)
+        vm.onIssuerIdChange(issuer)
+        vm.verify()
+        return vm
     }
 
     @Test

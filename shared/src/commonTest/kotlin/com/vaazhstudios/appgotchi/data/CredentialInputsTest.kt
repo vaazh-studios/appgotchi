@@ -15,6 +15,37 @@ class CredentialInputsTest {
     }
 
     @Test
+    fun aBareKeyBodyIsRecognisedWithoutItsHeaderLines() {
+        assertTrue(looksLikePrivateKey("MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg"))
+    }
+
+    @Test
+    fun realIdsAreNotMistakenForKeys() {
+        assertFalse(looksLikePrivateKey("1a2b3c4d-1a2b-1a2b-1a2b-1a2b3c4d5e6f"))
+        assertFalse(looksLikePrivateKey("12345678901234567891"))
+        assertFalse(looksLikePrivateKey("ABCDE12345"))
+    }
+
+    @Test
+    fun usersAndPermissionsLinkIsBuiltFromAValidAccountId() {
+        assertEquals(
+            "https://play.google.com/console/u/0/developers/1234567890123456789/users-and-permissions",
+            usersAndPermissionsUrl("1234567890123456789"),
+        )
+        assertEquals(
+            "https://play.google.com/console/u/0/developers/1234567890123456789/users-and-permissions",
+            usersAndPermissionsUrl("  1234567890123456789 "),
+        )
+    }
+
+    @Test
+    fun usersAndPermissionsLinkIsNullForAnInvalidAccountId() {
+        assertNull(usersAndPermissionsUrl("abc"))
+        assertNull(usersAndPermissionsUrl(""))
+        assertNull(usersAndPermissionsUrl("123"))
+    }
+
+    @Test
     fun emptyInputsHaveNoProblem() {
         assertNull(developerAccountIdProblem(""))
         assertNull(issuerIdProblem("   "))

@@ -30,6 +30,8 @@ enum class WizardScreen { Chooser, AppleChoice, AppleQuick, AppleGuided, PlayGui
 
 private const val PASTED_KEY_IN_ACCOUNT_ID =
     "That looks like a private key, so Appgotchi didn’t keep it. Paste the Account ID: the long number under your developer name on Play Console’s home page."
+private const val PASTED_KEY_IN_KEY_ID =
+    "That looks like your private key, so Appgotchi didn’t keep it. The Key ID is the 10-character ID next to the key in App Store Connect."
 private const val PASTED_KEY_IN_ISSUER_ID =
     "That looks like your private key, so Appgotchi didn’t keep it. The Issuer ID is the short ID shown above the keys list."
 
@@ -82,7 +84,7 @@ data class ConnectWizardState(
         }
 
     val canVerify: Boolean
-        get() = status != WizardStatus.Verifying && status != WizardStatus.Connected && when (screen) {
+        get() = isLastStep && status != WizardStatus.Verifying && status != WizardStatus.Connected && when (screen) {
             WizardScreen.AppleQuick, WizardScreen.AppleGuided ->
                 appleKeyFile != null && keyId.isNotBlank() && issuerId.isNotBlank() && issuerIdError == null
             WizardScreen.PlayGuided -> playKeyFile != null && serviceAccountEmail != null
@@ -172,7 +174,10 @@ class ConnectWizardViewModel(
     }
 
     fun onKeyIdChange(value: String) {
-        editUnlessVerifying { it.copy(keyId = value) }
+        editUnlessVerifying {
+            if (looksLikePrivateKey(value)) it.copy(keyId = "", error = PASTED_KEY_IN_KEY_ID)
+            else it.copy(keyId = value, error = null)
+        }
     }
 
     fun onIssuerIdChange(value: String) {
@@ -255,10 +260,10 @@ class ConnectWizardViewModel(
         editUnlessVerifying { it.copy(error = message) }
     }
 
-    /** Moving between steps or screens clears errors and any Waiting state; nothing moves while verifying. */
+    /** Moving between steps or screens clears errors and any Waiting state; nothing moves while verifying or once connected. */
     private fun navigate(transform: (ConnectWizardState) -> ConnectWizardState) {
         _state.update {
-            if (it.status == WizardStatus.Verifying) it
+            if (it.status == WizardStatus.Verifying || it.status == WizardStatus.Connected) it
             else transform(it).copy(status = WizardStatus.Idle, error = null)
         }
     }

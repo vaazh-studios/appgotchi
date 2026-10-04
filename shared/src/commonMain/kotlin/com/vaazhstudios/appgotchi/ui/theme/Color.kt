@@ -154,7 +154,6 @@ data class AppgotchiColors(
     val pending: Color,
     val warningContainer: Color,
     val onWarningContainer: Color,
-    val selectedSegment: Color,
     val cardFill: Color,
 )
 
@@ -164,7 +163,6 @@ internal val LightAppgotchiColors = AppgotchiColors(
     pending = Amber.c500,
     warningContainer = Amber.c50,
     onWarningContainer = Amber.c900,
-    selectedSegment = Color.White,
     cardFill = Color.White,
 )
 
@@ -174,6 +172,5 @@ internal val DarkAppgotchiColors = AppgotchiColors(
     pending = Amber.c400,
     warningContainer = Amber.c950,
     onWarningContainer = Amber.c200,
-    selectedSegment = Zinc.c800,
     cardFill = Zinc.c50.copy(alpha = 0.025f),
 )

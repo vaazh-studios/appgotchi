@@ -46,7 +46,7 @@
     <string name="play_file_label">Add the .json key file</string>
     <string name="play_file_added">Service account key added.</string>
     <string name="play_verify">Verify access</string>
-    <string name="play_waiting">The key works, but Google hasn’t applied the Play Console permissions yet. Keep this screen open and check again, or come back later.</string>
+    <string name="play_waiting">The key works, but Google hasn’t applied the Play Console permissions yet. Keep this screen open and check again, or add the key again later.</string>
     <string name="wizard_back_to_today">Close</string>
     <string name="chooser_title">Where do you publish?</string>
     <string name="chooser_body">Connect one store to start. You can add the other later.</string>
@@ -108,4 +108,7 @@
     <string name="today_try_demo">Try the demo</string>
     <string name="wizard_trust_both">Stored in this device’s secure storage. Only ever sent to Apple and Google.</string>
     <string name="component_paste">Paste</string>
+    <string name="component_paste_into">Paste into %1$s</string>
+    <string name="component_expanded">Expanded</string>
+    <string name="component_collapsed">Collapsed</string>
 </resources>
