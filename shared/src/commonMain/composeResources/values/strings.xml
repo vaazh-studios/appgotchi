@@ -7,6 +7,7 @@
     <string name="today_refresh">Refresh</string>
     <string name="today_no_apps">No apps in this account yet.</string>
     <string name="today_title">Today</string>
+    <string name="today_loading">Loading</string>
     <plurals name="today_apps">
         <item quantity="one">%1$d app</item>
         <item quantity="other">%1$d apps</item>

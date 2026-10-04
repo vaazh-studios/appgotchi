@@ -25,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -37,6 +39,7 @@ import appgotchi.shared.generated.resources.today_apps
 import appgotchi.shared.generated.resources.today_connect_button
 import appgotchi.shared.generated.resources.today_empty_body
 import appgotchi.shared.generated.resources.today_empty_title
+import appgotchi.shared.generated.resources.today_loading
 import appgotchi.shared.generated.resources.today_no_apps
 import appgotchi.shared.generated.resources.today_refresh
 import appgotchi.shared.generated.resources.today_stores
@@ -64,7 +67,12 @@ fun TodayScreen(
 
     when (val current = state) {
         TodayUiState.Loading -> Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val loadingDescription = stringResource(Res.string.today_loading)
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp).semantics { contentDescription = loadingDescription },
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         TodayUiState.NoStores -> EmptyState(onConnect)
         is TodayUiState.Loaded -> LoadedState(current.sections, onConnect, onRefresh = viewModel::refresh)
@@ -142,16 +150,24 @@ private fun LoadedState(sections: List<StoreSection>, onConnect: () -> Unit, onR
         sections.forEach { section ->
             item(key = "header-${section.store}") {
                 Row(
-                    modifier = Modifier.widthIn(max = ContentWidth).fillMaxWidth().padding(top = 12.dp),
+                    // One heading reading "App Store, 2 apps" instead of a bare number after the store name
+                    modifier = Modifier.widthIn(max = ContentWidth).fillMaxWidth().padding(top = 12.dp)
+                        .semantics(mergeDescendants = true) { heading() },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         section.store.displayName,
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f).semantics { heading() },
+                        modifier = Modifier.weight(1f),
                     )
-                    Text("${section.apps.size}", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val countDescription = pluralStringResource(Res.plurals.today_apps, section.apps.size, section.apps.size)
+                    Text(
+                        "${section.apps.size}",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { contentDescription = countDescription },
+                    )
                 }
             }
             section.errorMessage?.let { message ->
@@ -179,11 +195,15 @@ private fun LoadedState(sections: List<StoreSection>, onConnect: () -> Unit, onR
 @Composable
 private fun AppRow(app: StoreApp) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Decorative: the name is read from the column beside it
         Box(
-            modifier = Modifier.size(36.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.size(36.dp).clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                .clearAndSetSemantics {},
             contentAlignment = Alignment.Center,
         ) {
-            Text(app.name.take(1).uppercase(), style = MaterialTheme.typography.titleSmall)
+            val initial = app.name.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "?"
+            Text(initial, style = MaterialTheme.typography.titleSmall)
         }
         Column(Modifier.weight(1f)) {
             Text(app.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
