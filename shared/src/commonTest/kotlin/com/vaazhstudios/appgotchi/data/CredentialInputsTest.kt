@@ -25,11 +25,11 @@ class CredentialInputsTest {
         assertNull(developerAccountIdProblem("1234567890123456789"))
         assertNull(developerAccountIdProblem(" 1234567890123456789 "))
         assertEquals(
-            "That isn't a developer account ID. It's the long number shown as Account ID on Play Console's home page.",
+            "That isn’t a developer account ID. It’s the long number shown as Account ID on Play Console’s home page.",
             developerAccountIdProblem("nirmal jeffrey"),
         )
         assertEquals(
-            "That isn't a developer account ID. It's the long number shown as Account ID on Play Console's home page.",
+            "That isn’t a developer account ID. It’s the long number shown as Account ID on Play Console’s home page.",
             developerAccountIdProblem("12345"),
         )
     }

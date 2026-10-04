@@ -10,7 +10,7 @@ fun developerAccountIdProblem(text: String): String? {
     val value = text.trim()
     return when {
         value.isEmpty() || developerAccountId.matches(value) -> null
-        else -> "That isn't a developer account ID. It's the long number shown as Account ID on Play Console's home page."
+        else -> "That isn’t a developer account ID. It’s the long number shown as Account ID on Play Console’s home page."
     }
 }
 
