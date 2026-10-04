@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en" class="bg-white antialiased">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Appgotchi — Connect v2 (prototype)</title>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --font-sans: InterVariable, ui-sans-serif, system-ui, sans-serif;
+        --font-sans--font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      }
+    </style>
+  </head>
+  <body class="font-sans text-zinc-950">
+    <div class="isolate flex min-h-dvh flex-col">
+      <header class="border-b border-zinc-950/5">
+        <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <p class="flex items-center gap-2 text-base/7 font-semibold sm:text-sm/6">
+            <span class="size-2.5 shrink-0 rounded-full bg-lime-500" aria-hidden="true"></span>
+            Appgotchi
+          </p>
+          <button type="button" data-action="home" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 hover:bg-zinc-950/5 sm:text-sm/6">Start over</button>
+        </div>
+      </header>
+      <main class="flex-1">
+        <div class="mx-auto flex max-w-lg flex-col gap-8 px-4 py-10 sm:py-16" id="screen"></div>
+      </main>
+    </div>
+
+    <script>
+      const I = {
+        ext: '<svg viewBox="0 0 16 16" class="size-4 shrink-0 fill-zinc-400" aria-hidden="true"><path d="M6.22 8.72a.75.75 0 0 0 1.06 1.06l5.22-5.22v1.69a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75h-3.5a.75.75 0 0 0 0 1.5h1.69L6.22 8.72Z"/><path d="M3.5 6.75c0-.69.56-1.25 1.25-1.25H7A.75.75 0 0 0 7 4H4.75A2.75 2.75 0 0 0 2 6.75v4.5A2.75 2.75 0 0 0 4.75 14h4.5A2.75 2.75 0 0 0 12 11.25V9a.75.75 0 0 0-1.5 0v2.25c0 .69-.56 1.25-1.25 1.25h-4.5c-.69 0-1.25-.56-1.25-1.25v-4.5Z"/></svg>',
+        chev: '<svg viewBox="0 0 16 16" class="size-4 shrink-0 fill-zinc-400" aria-hidden="true"><path fill-rule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>',
+        lock: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-zinc-400" aria-hidden="true"><path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd"/></svg>',
+        check: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-lime-600" aria-hidden="true"><path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm3.844-8.791a.75.75 0 0 0-1.188-.918l-3.7 4.79-1.649-1.833a.75.75 0 1 0-1.114 1.004l2.25 2.5a.75.75 0 0 0 1.15-.043l4.25-5.5Z" clip-rule="evenodd"/></svg>',
+        warn: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-amber-500" aria-hidden="true"><path fill-rule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 4a.75.75 0 0 1 .75.75v3a.75.75 0 1 1-1.5 0v-3A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>',
+      }
+      const C = {
+        primary: 'inline-flex items-center justify-center rounded-lg bg-zinc-950 px-3 py-2.5 text-base/6 font-medium text-white hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600 disabled:bg-zinc-950/20 sm:py-2 sm:text-sm/6',
+        secondary: 'inline-flex items-center gap-1.5 rounded-lg py-2 pr-2 pl-2.5 text-base/6 font-medium ring-1 ring-zinc-950/15 hover:bg-zinc-950/5 sm:py-1.5 sm:text-sm/6',
+        quiet: 'inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-base/6 font-medium text-zinc-600 hover:bg-zinc-950/5 sm:py-1.5 sm:text-sm/6',
+        card: 'rounded-xl ring-1 ring-zinc-950/10',
+        muted: 'text-base/7 text-zinc-600 sm:text-sm/6',
+      }
+      const DEV_ID = '1234567890123456789'
+      const EMAIL = 'appgotchi-readonly@your-project.iam.gserviceaccount.com'
+      const tiles = () => false
+      const buttonsStyle = () => true
+
+      const state = { screen: 'chooser', step: 0, devId: '', issuer: '', appleFile: null, playFile: null, status: 'idle' }
+
+      const trust = (who) => `<p class="flex items-start gap-2 text-base/6 text-zinc-500 sm:text-sm/6">${I.lock}<span>Stored in this device’s secure storage. Only ever sent to ${who}.</span></p>`
+      const heading = (t, b) => `<div class="flex flex-col gap-2"><h1 class="text-2xl font-semibold tracking-tight text-balance">${t}</h1>${b ? `<p class="max-w-[56ch] ${C.muted} text-pretty">${b}</p>` : ''}</div>`
+      const progress = (n, total, label) => `<div class="flex flex-col gap-3"><div class="flex gap-1.5" aria-hidden="true">${Array.from({ length: total }, (_, i) => `<span class="h-1 flex-1 rounded-full ${i <= n ? 'bg-lime-500' : 'bg-zinc-950/10'}"></span>`).join('')}</div><p class="${C.muted} text-zinc-500 tabular-nums">${label} · Step ${n + 1} of ${total}</p></div>`
+      const footer = (back, next, nextLabel = 'Continue', enabled = true) => `<div class="flex items-center justify-between gap-3">${back ? `<button type="button" class="${C.quiet}" data-action="${back}">Back</button>` : '<span></span>'}<button type="button" class="${C.primary}" data-action="${next}" ${enabled ? '' : 'disabled'}>${nextLabel}</button></div>`
+
+      // Numbered mini-checklist with a button under each linked item (chosen over linked rows)
+      function checklist(items) {
+        if (buttonsStyle()) {
+          return `<ol role="list" class="flex flex-col gap-4">${items
+            .map(
+              (it, i) => `<li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full text-sm/6 font-medium text-zinc-600 tabular-nums ring-1 ring-zinc-950/10">${i + 1}</span>
+              <div class="flex min-w-0 flex-col gap-2"><p class="text-base/7 sm:text-sm/6">${it.text}</p>${it.note ? `<p class="${C.muted} text-zinc-500">${it.note}</p>` : ''}${it.href ? `<a href="${it.href}" target="_blank" rel="noreferrer" class="${C.secondary} self-start">${it.cta || 'Open'}${I.ext}</a>` : ''}</div></li>`,
+            )
+            .join('')}</ol>`
+        }
+        return `<ol role="list" class="${C.card} divide-y divide-zinc-950/5">${items
+          .map((it, i) => {
+            const inner = `<span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-lime-100 text-sm/6 font-medium text-lime-800 tabular-nums">${i + 1}</span>
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5"><span class="text-base/7 sm:text-sm/6">${it.text}</span>${it.note ? `<span class="${C.muted} text-zinc-500">${it.note}</span>` : ''}</span>${it.href ? I.ext : ''}`
+            return `<li>${it.href ? `<a href="${it.href}" target="_blank" rel="noreferrer" class="flex items-start gap-3 p-4 hover:bg-zinc-950/2.5">${inner}</a>` : `<div class="flex items-start gap-3 p-4">${inner}</div>`}</li>`
+          })
+          .join('')}</ol>`
+      }
+
+      function pasteField({ id, label, value, placeholder, error, mono = true }) {
+        return `<div class="flex flex-col gap-2">
+          <label for="${id}" class="text-base/6 font-medium sm:text-sm/6">${label}</label>
+          <div class="flex items-center gap-2 rounded-lg bg-white py-1 pr-1 pl-3 ring-1 ${error ? 'ring-red-600/40' : 'ring-zinc-950/15'} has-focus:ring-2 has-focus:ring-lime-600">
+            <input id="${id}" name="${id}" value="${value}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" data-field="${id}" class="min-w-0 flex-1 bg-transparent py-1 ${mono ? 'font-mono' : ''} text-base/6 outline-none placeholder:text-zinc-400 sm:text-sm/6" />
+            <button type="button" class="${C.quiet} shrink-0" data-paste="${id}">Paste</button>
+          </div>
+          ${error ? `<p class="flex items-start gap-2 text-base/6 text-red-700 sm:text-sm/6" aria-live="polite">${I.warn}<span>${error}</span></p>` : ''}
+        </div>`
+      }
+
+      function fileDrop(kind, file, detail) {
+        if (file) {
+          return `<div class="flex items-center gap-3 rounded-lg p-3 ring-1 ring-zinc-950/10"><div class="flex min-w-0 flex-1 flex-col"><p class="truncate text-base/6 font-medium sm:text-sm/6">${file}</p><p class="${C.muted} text-zinc-500">${detail}</p></div><button type="button" class="${C.quiet}" data-action="remove-${kind}">Remove</button></div>`
+        }
+        return `<button type="button" data-action="sample-${kind}" class="flex flex-col items-center gap-1 rounded-xl border border-dashed border-zinc-950/20 px-6 py-10 text-center hover:bg-zinc-950/2.5">
+          <span class="text-base/6 font-medium sm:text-sm/6">Drop the ${kind === 'p8' ? '.p8' : '.json'} file here</span>
+          <span class="${C.muted} text-zinc-500">or click to choose it (prototype: adds a sample)</span></button>`
+      }
+
+      const devIdError = () => {
+        const v = state.devId.trim()
+        if (!v) return null
+        if (v.includes('BEGIN') || v.includes('PRIVATE KEY')) return 'That looks like a private key. Paste the Account ID instead: the long number under your developer name on Play Console’s home page.'
+        if (!/^\d{15,20}$/.test(v)) return 'That isn’t a developer account ID. It’s the long number shown as Account ID on Play Console’s home page.'
+        return null
+      }
+      const issuerError = () => {
+        const v = state.issuer.trim()
+        if (!v) return null
+        if (v.includes('BEGIN')) return 'That looks like your private key. The Issuer ID is the short ID shown above the keys list.'
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) return 'An Issuer ID looks like 57246542-96fe-1a63-e053-0824d011072a.'
+        return null
+      }
+
+      // ---------- screens ----------
+      function chooser() {
+        const stores = [
+          { id: 'apple', name: 'App Store Connect', desc: 'An App Store Connect API key, for your iPhone, iPad and Mac apps.', badge: 'A' },
+          { id: 'play', name: 'Google Play', desc: 'A Google Cloud service account key, for your Android apps.', badge: 'G' },
+        ]
+        const card = (s) => `<button type="button" data-action="pick-${s.id}" class="${C.card} flex w-full items-start gap-4 p-4 text-left hover:bg-zinc-950/2.5 ${tiles() ? 'flex-col' : ''}">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-zinc-950/5 text-base/6 font-semibold">${s.badge}</span>
+            <span class="flex min-w-0 flex-1 flex-col gap-1"><span class="text-base/7 font-semibold sm:text-sm/6">${s.name}</span><span class="${C.muted} text-zinc-500">${s.desc}</span></span>
+            ${tiles() ? '' : `<span class="flex h-lh items-center">${I.chev}</span>`}</button>`
+        return `${heading('Where do you publish?', 'Connect one store to start. You can add the other later.')}
+          <div class="${tiles() ? 'grid gap-3 sm:grid-cols-2' : 'flex flex-col gap-3'}">${stores.map(card).join('')}</div>
+          <div class="flex flex-col items-center gap-3 border-t border-zinc-950/5 pt-6 text-center">
+            <p class="${C.muted}">Just looking around?</p>
+            <button type="button" class="${C.secondary}" data-action="demo">Try the demo with sample apps</button>
+          </div>
+          ${trust('Apple and Google')}`
+      }
+
+      function appleFork() {
+        return `${heading('Connect App Store Connect', 'Appgotchi signs in with an App Store Connect API key. Do you already have one?')}
+          <div class="flex flex-col gap-3">
+            <button type="button" data-action="apple-fast" class="${C.card} flex items-start gap-4 p-4 text-left hover:bg-zinc-950/2.5"><span class="flex min-w-0 flex-1 flex-col gap-1"><span class="text-base/7 font-semibold sm:text-sm/6">I have a key</span><span class="${C.muted} text-zinc-500">Add your .p8 file and Issuer ID on one screen.</span></span><span class="flex h-lh items-center">${I.chev}</span></button>
+            <button type="button" data-action="apple-guided" class="${C.card} flex items-start gap-4 p-4 text-left hover:bg-zinc-950/2.5"><span class="flex min-w-0 flex-1 flex-col gap-1"><span class="text-base/7 font-semibold sm:text-sm/6">Help me create one</span><span class="${C.muted} text-zinc-500">Three short steps, about two minutes.</span></span><span class="flex h-lh items-center">${I.chev}</span></button>
+          </div>
+          <div><button type="button" class="${C.quiet}" data-action="home">Back</button></div>`
+      }
+
+      function appleFast() {
+        const ready = state.appleFile && state.issuer && !issuerError()
+        return `${heading('Add your App Store Connect key')}
+          ${fileDrop('p8', state.appleFile, 'Key ID <span class="font-mono text-zinc-950">7XK2M9Q4TB</span> read from the file name.')}
+          ${pasteField({ id: 'issuer', label: 'Issuer ID', value: state.issuer, placeholder: '57246542-96fe-1a63-…', error: issuerError() })}
+          ${statusBlock('Apple')}
+          ${footer('pick-apple', 'verify', 'Verify and connect', !!ready)}
+          ${trust('Apple')}`
+      }
+
+      const appleSteps = [
+        () => `${heading('Create a team key', 'App Store Connect only lets you download each key once, so keep the file somewhere safe.')}
+          ${checklist([
+            { text: 'Open Users and Access → Integrations → Team Keys.', href: 'https://appstoreconnect.apple.com/access/integrations/api', cta: 'Open Team Keys' },
+            { text: 'Generate a key named “Appgotchi” with the App Manager role.', note: 'Needed later for releases. Creating keys needs Admin or Account Holder access.' },
+            { text: 'Download the .p8 file.' },
+          ])}`,
+        () => `${heading('Add your AuthKey file', 'Keep its original name so Appgotchi can read the Key ID.')}${fileDrop('p8', state.appleFile, 'Key ID <span class="font-mono text-zinc-950">7XK2M9Q4TB</span> read from the file name.')}`,
+        () => `${heading('Paste your Issuer ID', 'It’s shown above the keys list on the Team Keys page. It isn’t secret.')}${pasteField({ id: 'issuer', label: 'Issuer ID', value: state.issuer, placeholder: '57246542-96fe-1a63-…', error: issuerError() })}${statusBlock('Apple')}`,
+      ]
+
+      const playSteps = [
+        () => `${heading('Add your developer account ID', 'Appgotchi uses it to open the right Play Console pages for you.')}
+          ${checklist([
+            { text: 'Open Play Console’s home page.', href: 'https://play.google.com/console/u/0/developers', cta: 'Open Play Console' },
+            { text: 'Copy the Account ID under your developer name.' },
+          ])}
+          ${pasteField({ id: 'devid', label: 'Account ID', value: state.devId, placeholder: '4760…', error: devIdError() })}`,
+        () => `${heading('Enable the Google Play APIs', 'Appgotchi reads your apps and reports through two of Google’s APIs.')}
+          ${checklist([
+            { text: 'In Google Cloud Console, create a project or choose one you have.', href: 'https://console.cloud.google.com/projectcreate', cta: 'Open Cloud Console' },
+            { text: 'Enable the Google Play Developer Reporting API.', href: 'https://console.cloud.google.com/apis/library/playdeveloperreporting.googleapis.com', cta: 'Enable' },
+            { text: 'Enable the Google Play Android Developer API.', note: 'Used later for releases and reviews.', href: 'https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com', cta: 'Enable' },
+          ])}`,
+        () => `${heading('Create a service account key', 'This is the account Appgotchi signs in as. It needs no Cloud roles.')}
+          ${checklist([
+            { text: 'Create a service account named “appgotchi-readonly”, then choose Done.', href: 'https://console.cloud.google.com/iam-admin/serviceaccounts/create', cta: 'Create account' },
+            { text: 'Open it and go to the Keys tab.' },
+            { text: 'Add key → Create new key → JSON. Google offers the file only once.' },
+          ])}
+          <details class="group rounded-lg bg-amber-50 p-3 text-amber-900 ring-1 ring-amber-600/20"><summary class="flex cursor-pointer items-start gap-2 text-base/6 font-medium sm:text-sm/6">${I.warn}<span>“Create key” is greyed out?</span></summary>
+            <p class="mt-2 text-base/6 sm:text-sm/6">Google Cloud organizations created since May 2024 block service account keys by default. Ask an organization admin to allow keys for this project, or use a project outside your organization.</p></details>`,
+        () => `${heading('Add the service account key', 'Don’t commit this file to a repository.')}
+          ${fileDrop('json', state.playFile, 'Service account key added.')}
+          ${state.playFile ? emailRow() : ''}`,
+        () => `${heading('Invite it in Play Console', 'Give the service account read-only access. You can add more later without a new key.')}
+          ${emailRow()}
+          ${checklist([
+            { text: 'Open Users and permissions and choose Invite new users.', href: `https://play.google.com/console/u/0/developers/${state.devId || DEV_ID}/users-and-permissions`, cta: 'Open Users and permissions' },
+            { text: 'Paste the email above.' },
+            { text: 'Under Account permissions, tick “View app information and download bulk reports (read-only)”, then Invite user.', note: 'Reviews, releases and revenue will ask for more permissions when you turn them on.' },
+          ])}`,
+        () => `${heading('Check the connection', 'Google can take a while to apply new permissions. Appgotchi keeps checking while this screen is open.')}${statusBlock('Google')}`,
+      ]
+
+      function emailRow() {
+        return `<div class="flex items-center gap-3 rounded-lg py-1 pr-1 pl-3 ring-1 ring-zinc-950/10"><p class="min-w-0 flex-1 truncate font-mono text-base/6 sm:text-sm/6">${EMAIL}</p><button type="button" class="${C.quiet}" data-action="copy">Copy email</button></div>`
+      }
+
+      function statusBlock(who) {
+        if (state.status === 'verifying') return `<p class="${C.muted}">Checking with ${who}…</p>`
+        if (state.status === 'connected') return `<p class="flex items-start gap-2 text-base/6 sm:text-sm/6">${I.check}<span>Connected. Appgotchi found 2 apps.</span></p>`
+        if (state.status === 'waiting') return `<div class="rounded-lg bg-amber-50 p-3 text-base/6 text-amber-900 ring-1 ring-amber-600/20 sm:text-sm/6">The key works, but Google hasn’t applied the Play Console permissions yet. Appgotchi will keep checking. Only apps you’ve uploaded to Play Console appear.</div>`
+        return ''
+      }
+
+      function demo() {
+        const apps = [['Vocabloot', 'com.tntstudios.snaplingo', 'Ready for Sale'], ['PosePal', 'com.tntstudios.posepal', 'In Review']]
+        return `<div class="flex items-center justify-between gap-3 rounded-lg bg-lime-50 p-3 ring-1 ring-lime-600/20"><p class="text-base/6 text-lime-900 sm:text-sm/6">You’re viewing sample data.</p><button type="button" class="${C.quiet} text-lime-900" data-action="home">Connect a store</button></div>
+          ${heading('Today', '4 apps across 2 stores.')}
+          <div class="flex flex-col gap-3">${apps
+            .map((a) => `<div class="${C.card} flex items-center gap-3 p-4"><span class="flex size-9 items-center justify-center rounded-lg bg-zinc-950/5 font-semibold">${a[0][0]}</span><div class="flex min-w-0 flex-1 flex-col"><p class="text-base/6 font-medium sm:text-sm/6">${a[0]}</p><p class="truncate font-mono text-sm/6 text-zinc-500 sm:text-xs/5">${a[1]}</p></div><span class="flex items-center gap-2 text-base/6 text-zinc-600 sm:text-sm/6"><span class="size-2 rounded-full ${a[2] === 'In Review' ? 'bg-amber-500' : 'bg-lime-500'}"></span>${a[2]}</span></div>`)
+            .join('')}</div>`
+      }
+
+      function render() {
+        const el = document.getElementById('screen')
+        if (state.screen === 'chooser') el.innerHTML = chooser()
+        else if (state.screen === 'demo') el.innerHTML = demo()
+        else if (state.screen === 'apple-fork') el.innerHTML = appleFork()
+        else if (state.screen === 'apple-fast') el.innerHTML = appleFast()
+        else if (state.screen === 'apple-guided') {
+          const last = state.step === appleSteps.length - 1
+          const can = state.step === 1 ? !!state.appleFile : last ? state.issuer && !issuerError() : true
+          el.innerHTML = progress(state.step, appleSteps.length, 'App Store Connect') + appleSteps[state.step]() +
+            footer(state.step === 0 ? 'pick-apple' : 'back', last ? 'verify' : 'next', last ? 'Verify and connect' : 'Continue', !!can) + trust('Apple')
+        } else if (state.screen === 'play') {
+          const last = state.step === playSteps.length - 1
+          const can = state.step === 0 ? state.devId && !devIdError() : state.step === 3 ? !!state.playFile : true
+          el.innerHTML = progress(state.step, playSteps.length, 'Google Play') + playSteps[state.step]() +
+            footer(state.step === 0 ? 'home' : 'back', last ? 'verify' : 'next', last ? (state.status === 'waiting' ? 'Check again' : 'Verify access') : 'Continue', !!can) + trust('Google')
+        }
+      }
+
+      document.addEventListener('click', (e) => {
+        const paste = e.target.closest('[data-paste]')?.dataset.paste
+        if (paste === 'devid') state.devId = DEV_ID
+        if (paste === 'issuer') state.issuer = '57246542-96fe-1a63-e053-0824d011072a'
+        const a = e.target.closest('[data-action]')?.dataset.action
+        const go = (screen, step = 0) => Object.assign(state, { screen, step, status: 'idle' })
+        if (a === 'home') go('chooser')
+        if (a === 'demo') go('demo')
+        if (a === 'pick-apple') go('apple-fork')
+        if (a === 'pick-play') go('play')
+        if (a === 'apple-fast') go('apple-fast')
+        if (a === 'apple-guided') go('apple-guided')
+        if (a === 'next') state.step++
+        if (a === 'back') { state.step--; state.status = 'idle' }
+        if (a === 'sample-p8') state.appleFile = 'AuthKey_7XK2M9Q4TB.p8'
+        if (a === 'sample-json') state.playFile = 'appgotchi-readonly-4f2a9c.json'
+        if (a === 'remove-p8') state.appleFile = null
+        if (a === 'remove-json') state.playFile = null
+        if (a === 'copy') navigator.clipboard?.writeText(EMAIL)
+        if (a === 'verify') {
+          const retry = state.status === 'waiting'
+          state.status = 'verifying'
+          render()
+          setTimeout(() => { state.status = state.screen === 'play' && !retry ? 'waiting' : 'connected'; render() }, 900)
+          return
+        }
+        if (paste || a) render()
+      })
+      document.addEventListener('input', (e) => {
+        const f = e.target.dataset.field
+        if (f === 'devid') state.devId = e.target.value
+        if (f === 'issuer') state.issuer = e.target.value
+      })
+      document.addEventListener('focusout', (e) => { if (e.target.dataset?.field) render() })
+      render()
+    </script>
+  </body>
+</html>
