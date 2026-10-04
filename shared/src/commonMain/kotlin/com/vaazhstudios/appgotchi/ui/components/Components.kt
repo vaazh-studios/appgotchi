@@ -135,7 +135,7 @@ fun <T> SegmentedControl(
                 Text(
                     label,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.secondary,
                 )
             }
         }
@@ -176,7 +176,7 @@ fun BrandMark(modifier: Modifier = Modifier) {
 /** Outlined text field colours: hairline border, lime focus ring. */
 @Composable
 fun appTextFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+    focusedBorderColor = AppgotchiTheme.colors.focus,
     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
     focusedLabelColor = MaterialTheme.colorScheme.onSurface,
     cursorColor = MaterialTheme.colorScheme.onSurface,

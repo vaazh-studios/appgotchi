@@ -23,6 +23,7 @@ private object Lime {
     val c200 = Color(0xFFD9F99D)
     val c400 = Color(0xFFA3E635)
     val c500 = Color(0xFF84CC16)
+    val c600 = Color(0xFF65A30D)
     val c900 = Color(0xFF365314)
     val c950 = Color(0xFF1A2E05)
 }
@@ -121,6 +122,7 @@ internal val DarkColors = darkColorScheme(
 @Immutable
 data class AppgotchiColors(
     val live: Color,
+    val focus: Color,
     val pending: Color,
     val warningContainer: Color,
     val onWarningContainer: Color,
@@ -130,6 +132,7 @@ data class AppgotchiColors(
 
 internal val LightAppgotchiColors = AppgotchiColors(
     live = Lime.c500,
+    focus = Lime.c600,
     pending = Amber.c500,
     warningContainer = Amber.c50,
     onWarningContainer = Amber.c900,
@@ -139,6 +142,7 @@ internal val LightAppgotchiColors = AppgotchiColors(
 
 internal val DarkAppgotchiColors = AppgotchiColors(
     live = Lime.c400,
+    focus = Lime.c400,
     pending = Amber.c400,
     warningContainer = Amber.c950,
     onWarningContainer = Amber.c200,
