@@ -62,4 +62,5 @@
     <string name="play_open_console">Open Play Console</string>
     <string name="play_verify">Verify access</string>
     <string name="play_waiting">The key works, but Google hasn’t applied the Play Console permissions yet. This can take a few hours. Keep this screen open and check again, or add the key again later.</string>
+    <string name="component_paste">Paste</string>
 </resources>

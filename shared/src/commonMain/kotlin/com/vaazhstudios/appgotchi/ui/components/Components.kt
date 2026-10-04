@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +49,25 @@ import appgotchi.shared.generated.resources.Res
 import appgotchi.shared.generated.resources.app_name
 import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
+import appgotchi.shared.generated.resources.component_paste
+import kotlinx.coroutines.launch
 
 private val ButtonPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
 
@@ -240,3 +258,151 @@ fun appTextFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     focusedLabelColor = MaterialTheme.colorScheme.onSurface,
     cursorColor = MaterialTheme.colorScheme.onSurface,
 )
+
+/** One numbered instruction; [url] adds a button under the text that opens it in the browser. */
+data class ChecklistItem(
+    val text: String,
+    val note: String? = null,
+    val linkLabel: String? = null,
+    val url: String? = null,
+)
+
+@Composable
+fun StepChecklist(items: List<ChecklistItem>, modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        items.forEachIndexed { index, item ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier.size(24.dp).border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("${index + 1}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(item.text, style = MaterialTheme.typography.bodyLarge)
+                    item.note?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (item.url != null && item.linkLabel != null) {
+                        // Opening a browser can fail (no handler); never crash over it
+                        SecondaryButton(onClick = { runCatching { uriHandler.openUri(item.url) } }) {
+                            Text("${item.linkLabel} ↗")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Full-width list card used to choose between options (e.g. which store to connect). */
+@Composable
+fun ChoiceCard(
+    title: String,
+    description: String,
+    badge: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().focusRing(interactionSource, MaterialTheme.shapes.medium),
+        shape = MaterialTheme.shapes.medium,
+        color = AppgotchiTheme.colors.cardFill,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        interactionSource = interactionSource,
+    ) {
+        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                    .clearAndSetSemantics {},
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(badge, style = MaterialTheme.typography.titleSmall)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Text field for IDs people copy from a console, with a Paste button and an error line. */
+@Composable
+fun PasteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    error: String? = null,
+    enabled: Boolean = true,
+    monospace: Boolean = true,
+) {
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            singleLine = true,
+            enabled = enabled,
+            isError = error != null,
+            textStyle = if (monospace) MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace) else MaterialTheme.typography.bodyLarge,
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
+            colors = appTextFieldColors(),
+            trailingIcon = {
+                QuietButton(
+                    onClick = { scope.launch { readClipboardText(clipboard)?.let { onValueChange(it.trim()) } } },
+                    enabled = enabled,
+                ) { Text(stringResource(Res.string.component_paste)) }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        error?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+    }
+}
+
+/** A collapsed "trouble?" note that expands in place. */
+@Composable
+fun HelpDisclosure(title: String, body: String, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = AppgotchiTheme.colors.warningContainer,
+        border = BorderStroke(1.dp, AppgotchiTheme.colors.pending.copy(alpha = 0.3f)),
+    ) {
+        Column(Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
+            QuietButton(onClick = { expanded = !expanded }) {
+                Text(title, color = AppgotchiTheme.colors.onWarningContainer)
+            }
+            if (expanded) {
+                Text(
+                    body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppgotchiTheme.colors.onWarningContainer,
+                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+                )
+            }
+        }
+    }
+}
