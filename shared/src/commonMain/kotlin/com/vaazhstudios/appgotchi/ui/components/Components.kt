@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import appgotchi.shared.generated.resources.Res
 import appgotchi.shared.generated.resources.app_name
@@ -169,7 +170,7 @@ fun StatusDot(color: Color, modifier: Modifier = Modifier) {
 fun BrandMark(modifier: Modifier = Modifier) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary))
-        Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
     }
 }
 

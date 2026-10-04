@@ -29,7 +29,11 @@ internal fun appgotchiTypography(): Typography {
         lineHeight = line.sp,
         letterSpacing = tracking.sp,
     )
-    return Typography(
+    val defaults = Typography()
+    // Start from the defaults so the styles we don't size ourselves (display large/medium, the emphasized variants) still use Inter
+    return defaults.copy(
+        displayLarge = defaults.displayLarge.copy(fontFamily = inter),
+        displayMedium = defaults.displayMedium.copy(fontFamily = inter),
         displaySmall = style(32, 40, FontWeight.SemiBold, -0.5),
         headlineLarge = style(28, 36, FontWeight.SemiBold, -0.4),
         headlineMedium = style(24, 32, FontWeight.SemiBold, -0.3),
@@ -43,5 +47,20 @@ internal fun appgotchiTypography(): Typography {
         labelLarge = style(14, 20, FontWeight.Medium),
         labelMedium = style(12, 16, FontWeight.Medium),
         labelSmall = style(11, 16, FontWeight.Medium),
+        displayLargeEmphasized = defaults.displayLargeEmphasized.copy(fontFamily = inter),
+        displayMediumEmphasized = defaults.displayMediumEmphasized.copy(fontFamily = inter),
+        displaySmallEmphasized = defaults.displaySmallEmphasized.copy(fontFamily = inter),
+        headlineLargeEmphasized = defaults.headlineLargeEmphasized.copy(fontFamily = inter),
+        headlineMediumEmphasized = defaults.headlineMediumEmphasized.copy(fontFamily = inter),
+        headlineSmallEmphasized = defaults.headlineSmallEmphasized.copy(fontFamily = inter),
+        titleLargeEmphasized = defaults.titleLargeEmphasized.copy(fontFamily = inter),
+        titleMediumEmphasized = defaults.titleMediumEmphasized.copy(fontFamily = inter),
+        titleSmallEmphasized = defaults.titleSmallEmphasized.copy(fontFamily = inter),
+        bodyLargeEmphasized = defaults.bodyLargeEmphasized.copy(fontFamily = inter),
+        bodyMediumEmphasized = defaults.bodyMediumEmphasized.copy(fontFamily = inter),
+        bodySmallEmphasized = defaults.bodySmallEmphasized.copy(fontFamily = inter),
+        labelLargeEmphasized = defaults.labelLargeEmphasized.copy(fontFamily = inter),
+        labelMediumEmphasized = defaults.labelMediumEmphasized.copy(fontFamily = inter),
+        labelSmallEmphasized = defaults.labelSmallEmphasized.copy(fontFamily = inter),
     )
 }
