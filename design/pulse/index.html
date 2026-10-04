@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en" class="bg-zinc-100 antialiased dark:bg-black">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Appgotchi — Pulse 2.1 (prototype)</title>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @custom-variant dark (&:where(.dark, .dark *));
+      @theme {
+        --font-sans: InterVariable, ui-sans-serif, system-ui, sans-serif;
+        --font-sans--font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      }
+      /* Brand accent: lime, used sparingly (logo dot, progress, focus, live status) */
+      :root { --accent: var(--color-lime-500); --accent-ink: var(--color-lime-700); --accent-on: var(--color-zinc-950); }
+      .dark { --accent-ink: var(--color-lime-400); }
+    </style>
+  </head>
+  <body class="font-sans text-zinc-950 dark:text-white">
+    <div class="isolate flex min-h-dvh flex-col">
+      <header class="border-b border-zinc-950/5 bg-white dark:border-white/10 dark:bg-zinc-950">
+        <div class="mx-auto flex max-w-[100rem] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <p class="flex items-center gap-2 text-base/7 font-semibold sm:text-sm/6">
+            <span class="size-2.5 shrink-0 rounded-full bg-(--accent)" aria-hidden="true"></span>
+            Appgotchi
+            <span class="font-normal text-zinc-500 dark:text-zinc-400">Pulse · 2.1 prototype</span>
+          </p>
+          <button type="button" id="mode" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 ring-1 ring-zinc-950/10 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5">Dark preview</button>
+        </div>
+      </header>
+
+      <main class="flex-1">
+        <div class="mx-auto flex max-w-[100rem] flex-col gap-20 px-4 py-10 sm:px-6 lg:px-8">
+          <div class="flex flex-col gap-3">
+            <h1 class="text-3xl font-semibold tracking-tight text-balance">Pulse</h1>
+            <p class="max-w-[65ch] text-base/7 text-pretty text-zinc-600 sm:text-sm/6 dark:text-zinc-400">Ratings, new reviews and crash rate for every app, at desktop and phone width.</p>
+            <nav aria-label="Screens" class="flex flex-wrap gap-2">
+              <a href="#today" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 ring-1 ring-zinc-950/10 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5">1. Today</a>
+              <a href="#detail" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 ring-1 ring-zinc-950/10 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5">2. App detail</a>
+              <a href="#link-apps" class="rounded-lg px-2.5 py-1.5 text-base/6 font-medium text-zinc-600 ring-1 ring-zinc-950/10 hover:bg-zinc-950/5 sm:text-sm/6 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5">3. Link apps</a>
+            </nav>
+          </div>
+
+          <!-- 1. Today -->
+          <section id="today" class="flex scroll-mt-6 flex-col gap-6" aria-labelledby="today-title">
+            <div class="flex flex-col gap-2">
+              <h2 id="today-title" class="text-xl font-semibold text-balance">1. Today</h2>
+              <p class="max-w-[65ch] text-base/7 text-pretty text-zinc-600 sm:text-sm/6 dark:text-zinc-400">One row per app, with ratings and crash rate in a right-aligned column. Linked iOS and Android apps share a row. Apple doesn’t report a crash rate, so Tidepool shows none. Select any app to open the Sproutly detail below.</p>
+              <p class="max-w-[65ch] text-base/7 text-pretty text-zinc-500 sm:text-sm/6 dark:text-zinc-400">Downloads and proceeds stay locked per app until that app’s vendor number or reports folder is added.</p>
+            </div>
+            <div data-frames="today"></div>
+          </section>
+
+          <!-- 2. App detail -->
+          <section id="detail" class="flex scroll-mt-6 flex-col gap-6" aria-labelledby="detail-title">
+            <div class="flex flex-col gap-2">
+              <h2 id="detail-title" class="text-xl font-semibold text-balance">2. App detail</h2>
+              <p class="max-w-[65ch] text-base/7 text-pretty text-zinc-600 sm:text-sm/6 dark:text-zinc-400">Sproutly, linked across both stores. Hover the crash chart, or focus it and use the arrow keys. The review filter works. Reviews are read-only.</p>
+            </div>
+            <div data-frames="detail"></div>
+          </section>
+
+          <!-- 3. Link apps -->
+          <section id="link-apps" class="flex scroll-mt-6 flex-col gap-6" aria-labelledby="link-title">
+            <div class="flex flex-col gap-2">
+              <h2 id="link-title" class="text-xl font-semibold text-balance">3. Link apps</h2>
+              <p class="max-w-[65ch] text-base/7 text-pretty text-zinc-600 sm:text-sm/6 dark:text-zinc-400">Opened from Change on the app detail screen. Try Change, Unlink and the Link with menus. Both frames share the same state.</p>
+            </div>
+            <div data-frames="sheet"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // ---------- tokens ----------
+      const P_IOS = 'M8.8086 14.9194l6.1107-11.0368c.0837-.1513.1682-.302.2437-.4584.0685-.142.1267-.2854.1646-.4403.0803-.3259.0588-.6656-.066-.9767-.1238-.3095-.3417-.5678-.6201-.7355a1.4175 1.4175 0 0 0-.921-.1924c-.3207.043-.6135.1935-.8443.4288-.1094.1118-.1996.2361-.2832.369-.092.1463-.175.2979-.259.4492l-.3864.6979-.3865-.6979c-.0837-.1515-.1667-.303-.2587-.4492-.0837-.1329-.1739-.2572-.2835-.369-.2305-.2353-.5233-.3857-.844-.429a1.4181 1.4181 0 0 0-.921.1926c-.2784.1677-.4964.426-.6203.7355-.1246.311-.1461.6508-.066.9767.038.155.0962.2984.1648.4403.0753.1564.1598.307.2437.4584l1.248 2.2543-4.8625 8.7825H2.0295c-.1676 0-.3351-.0007-.5026.0092-.1522.009-.3004.0284-.448.0714-.3108.0906-.5822.2798-.7783.548-.195.2665-.3006.5929-.3006.9279 0 .3352.1057.6612.3006.9277.196.2683.4675.4575.7782.548.1477.043.296.0623.4481.0715.1675.01.335.009.5026.009h13.0974c.0171-.0357.059-.1294.1-.2697.415-1.4151-.6156-2.843-2.0347-2.843zM3.113 18.5418l-.7922 1.5008c-.0818.1553-.1644.31-.2384.4705-.067.1458-.124.293-.1611.452-.0785.3346-.0576.6834.0645 1.0029.1212.3175.3346.583.607.7549.2727.172.5891.2416.9013.1975.3139-.044.6005-.1986.8263-.4402.1072-.1148.1954-.2424.2772-.3787.0902-.1503.1714-.3059.2535-.4612L6 19.4636c-.0896-.149-.9473-1.4704-2.887-.9218m20.5861-3.0056a1.4707 1.4707 0 0 0-.779-.5407c-.1476-.0425-.2961-.0616-.4483-.0705-.1678-.0099-.3352-.0091-.503-.0091H18.648l-4.3891-7.817c-.6655.7005-.9632 1.485-1.0773 2.1976-.1655 1.0333.0367 2.0934.546 3.0004l5.2741 9.3933c.084.1494.167.299.2591.4435.0837.131.1739.2537.2836.364.231.2323.5238.3809.8449.4232.3192.0424.643-.0244.9217-.1899.2784-.1653.4968-.4204.621-.7257.1246-.3072.146-.6425.0658-.9641-.0381-.1529-.0962-.2945-.165-.4346-.0753-.1543-.1598-.303-.2438-.4524l-1.216-2.1662h1.596c.1677 0 .3351.0009.5029-.009.1522-.009.3007-.028.4483-.0705a1.4707 1.4707 0 0 0 .779-.5407A1.5386 1.5386 0 0 0 24 16.452a1.539 1.539 0 0 0-.3009-.9158Z'
+      const P_PLAY = 'M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594zM1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924zm12.207 10.065l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973zm0 2.067l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z'
+
+      // Heroicons micro (16px)
+      const I = {
+        chev: '<svg viewBox="0 0 16 16" class="size-4 shrink-0 fill-zinc-400" aria-hidden="true"><path fill-rule="evenodd" d="M6.22 4.22a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06L8.94 8 6.22 5.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>',
+        back: '<svg viewBox="0 0 16 16" class="size-4 shrink-0 fill-zinc-500 dark:fill-zinc-400" aria-hidden="true"><path fill-rule="evenodd" d="M14 8a.75.75 0 0 1-.75.75H4.56l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 1.06L4.56 7.25h8.69A.75.75 0 0 1 14 8Z" clip-rule="evenodd"/></svg>',
+        ext: '<svg viewBox="0 0 16 16" class="size-4 shrink-0 fill-zinc-400" aria-hidden="true"><path d="M6.22 8.72a.75.75 0 0 0 1.06 1.06l5.22-5.22v1.69a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75h-3.5a.75.75 0 0 0 0 1.5h1.69L6.22 8.72Z"/><path d="M3.5 6.75c0-.69.56-1.25 1.25-1.25H7A.75.75 0 0 0 7 4H4.75A2.75 2.75 0 0 0 2 6.75v4.5A2.75 2.75 0 0 0 4.75 14h4.5A2.75 2.75 0 0 0 12 11.25V9a.75.75 0 0 0-1.5 0v2.25c0 .69-.56 1.25-1.25 1.25h-4.5c-.69 0-1.25-.56-1.25-1.25v-4.5Z"/></svg>',
+        lock: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-zinc-400" aria-hidden="true"><path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd"/></svg>',
+        check: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-lime-600 dark:fill-lime-400" aria-hidden="true"><path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm3.844-8.791a.75.75 0 0 0-1.188-.918l-3.7 4.79-1.649-1.833a.75.75 0 1 0-1.114 1.004l2.25 2.5a.75.75 0 0 0 1.15-.043l4.25-5.5Z" clip-rule="evenodd"/></svg>',
+        warn: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-amber-500" aria-hidden="true"><path fill-rule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 4a.75.75 0 0 1 .75.75v3a.75.75 0 1 1-1.5 0v-3A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>',
+        link: '<svg viewBox="0 0 16 16" class="size-4 h-lh shrink-0 fill-zinc-400" aria-hidden="true"><path fill-rule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 3.085 2.514l2-2a2 2 0 0 0 0-2.828.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-3.085-2.514l-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 0 1.06Z" clip-rule="evenodd"/></svg>',
+        x: '<svg viewBox="0 0 16 16" class="size-4 shrink-0 fill-zinc-500 dark:fill-zinc-400" aria-hidden="true"><path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"/></svg>',
+      }
+
+      // Frame-scoped classes. Each frame is a named container "f"; @lg/f: plays the role of sm:.
+      const C = {
+        body: 'text-base/7 @lg/f:text-sm/6',
+        muted: 'text-base/7 text-zinc-500 @lg/f:text-sm/6 dark:text-zinc-400',
+        name: 'text-base/6 font-medium @lg/f:text-sm/6',
+        h2: 'text-base/7 font-semibold @lg/f:text-sm/6',
+        strong: 'font-medium text-zinc-950 tabular-nums dark:text-white',
+        link: 'relative font-medium whitespace-nowrap text-zinc-950 underline decoration-zinc-950/20 underline-offset-4 hover:decoration-zinc-950/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent) dark:text-white dark:decoration-white/30 dark:hover:decoration-white/70',
+        primary: 'inline-flex items-center justify-center rounded-lg bg-zinc-950 px-3 py-2 text-base/6 font-medium text-white hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent) @lg/f:py-1.5 @lg/f:text-sm/6 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200',
+        secondary: 'inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-base/6 font-medium ring-1 ring-zinc-950/15 hover:bg-zinc-950/5 @lg/f:py-1.5 @lg/f:text-sm/6 dark:ring-white/15 dark:hover:bg-white/5',
+        quiet: 'inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-base/6 font-medium text-zinc-600 hover:bg-zinc-950/5 @lg/f:py-1.5 @lg/f:text-sm/6 dark:text-zinc-300 dark:hover:bg-white/5',
+        dashed: 'rounded-xl border border-dashed border-zinc-950/15 dark:border-white/15',
+      }
+
+      // ---------- sample data ----------
+      const N = 30 // Sep 4 to Oct 3, 2026
+      const day = (i) => new Date(2026, 8, 4 + i).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const SERIES = {
+        sproutly: [0.61, 0.58, 0.57, 0.55, 0.56, 0.53, 0.52, 0.54, 0.51, 0.5, 0.49, 0.52, 0.5, 0.48, 0.62, 0.88, 0.81, 0.7, 0.55, 0.47, 0.46, 0.45, 0.47, 0.44, 0.43, 0.45, 0.42, 0.41, 0.43, 0.42],
+        inkwell: [0.78, 0.8, 0.79, 0.83, 0.82, 0.85, 0.84, 0.88, 0.86, 0.9, 0.92, 0.91, 0.95, 0.94, 0.97, 0.99, 1.01, 0.98, 1.03, 1.05, 1.04, 1.08, 1.1, 1.12, 1.09, 1.14, 1.16, 1.18, 1.19, 1.21],
+      }
+      const NOTES = { 14: 'Version 3.4.0 rolled out', 18: 'Version 3.4.1 rolled out' }
+      const LIMIT = 1.09 // Google Play bad behaviour threshold, user-perceived crash rate
+
+      const APPS = [
+        { key: 'sproutly', name: 'Sproutly', stores: ['ios', 'android'], rating: 4.7, newReviews: 3, crash: 0.42 },
+        { key: 'tidepool', name: 'Tidepool', stores: ['ios'], rating: 4.4, newReviews: 1, crash: null },
+        { key: 'inkwell', name: 'Inkwell', stores: ['android'], rating: null, newReviews: null, crash: 1.21 },
+      ]
+
+      const REVIEWS = [
+        { stars: 5, title: 'Finally remembering to water my monstera', body: 'The reminders are gentle and the little streaks keep me going. My pothos has never looked better.', who: 'leafy_lou', where: 'United States', date: 'Oct 3', version: '3.4.1', unread: true },
+        { stars: 2, title: 'Widget stopped updating', body: 'Since the last update the home screen widget shows yesterday’s tasks until I open the app. It was my favourite part, please fix it.', who: 'Sam R.', where: 'United Kingdom', date: 'Oct 2', version: '3.4.1', unread: true },
+        { stars: 4, title: 'Lovely, but I want a dark icon', body: 'Does exactly what I need. Would be perfect with a dark app icon and a way to group plants by room.', who: 'jk.green', where: 'Canada', date: 'Oct 1', version: '3.4.1', unread: true },
+        { stars: 1, title: 'Lost my plant list after restoring', body: 'I moved to a new iPhone and all 23 plants were gone, even though iCloud sync was on. Very disappointing.', who: 'Alex T', where: 'Australia', date: 'Sep 29', version: '3.4.0', unread: false },
+        { stars: 5, title: 'Simple and calm', body: 'No ads shouting at me, just my plants and when they need water. Worth every penny.', who: 'morgan_grows', where: 'Germany', date: 'Sep 27', version: '3.4.0', unread: false },
+        { stars: 4, title: 'Great for beginners', body: 'The care tips for each plant are short and useful. Light level guidance could be clearer.', who: 'Jordan', where: 'United States', date: 'Sep 24', version: '3.3.2', unread: false },
+      ]
+
+      // ---------- small pieces ----------
+      const mark = (s, cls = 'size-4') =>
+        `<svg viewBox="0 0 24 24" class="${cls} shrink-0 fill-zinc-500 dark:fill-zinc-400" role="img" aria-label="${s === 'ios' ? 'App Store' : 'Google Play'}"><path d="${s === 'ios' ? P_IOS : P_PLAY}"/></svg>`
+      const marks = (a) => `<span class="flex shrink-0 items-center gap-1.5">${a.stores.map((s) => mark(s)).join('')}</span>`
+      const icon = (a, size = 'size-10 @lg/f:size-9') =>
+        `<span class="flex ${size} shrink-0 items-center justify-center rounded-lg bg-zinc-950/5 text-base/6 font-semibold text-zinc-700 @lg/f:text-sm/6 dark:bg-white/10 dark:text-zinc-200" aria-hidden="true">${a.name[0]}</span>`
+      const star = '<span aria-hidden="true"> ★</span><span class="sr-only"> stars</span>'
+      const setUp = `<a href="#" class="${C.link}">Set up <span aria-hidden="true">→</span></a>`
+      const unlockText = (a) =>
+        a.stores.length === 2 ? 'iOS: add your vendor number · Android: add your reports folder' : a.stores[0] === 'ios' ? 'Add your vendor number' : 'Add your reports folder'
+
+      function spark(key, cls = 'h-6 w-20') {
+        const vals = SERIES[key]
+        const max = 1.5 // shared scale so rows compare honestly
+        const pts = vals.map((v, i) => `${((i / (N - 1)) * 100).toFixed(2)},${(100 - (v / max) * 100).toFixed(2)}`).join(' ')
+        const lastY = (100 - (vals[N - 1] / max) * 100).toFixed(2)
+        const over = vals[N - 1] > LIMIT
+        return `<span class="relative inline-block ${cls} shrink-0" aria-hidden="true">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 size-full overflow-visible"><polyline points="${pts}" fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class="${over ? 'stroke-amber-500' : 'stroke-zinc-400 dark:stroke-zinc-500'}"/></svg>
+          <span class="absolute top-(--y) left-full size-2 -translate-1/2 rounded-full ring-2 ring-white dark:ring-zinc-950 ${over ? 'bg-amber-500' : 'bg-zinc-950 dark:bg-white'}" style="--y:${lastY}%"></span>
+        </span>`
+      }
+
+      const ghostBars = (n = 14) => {
+        const h = [38, 52, 44, 60, 48, 66, 58, 72, 54, 80, 68, 76, 62, 88, 70, 84]
+        return `<div class="flex h-10 items-end gap-1" aria-hidden="true">${h
+          .slice(0, n)
+          .map((v) => `<span class="h-(--h) flex-1 rounded-t-sm bg-zinc-950/5 dark:bg-white/5" style="--h:${v}%"></span>`)
+          .join('')}</div>`
+      }
+
+      // ---------- Today ----------
+      function rowMetrics(a) {
+        const over = a.crash != null && a.crash > LIMIT
+        return `<li class="relative -mx-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 rounded-lg px-3 py-4 hover:bg-zinc-950/2.5 @3xl/f:grid-cols-(--cols) dark:hover:bg-white/2.5">
+          <div class="flex min-w-0 items-center gap-3">
+            ${icon(a)}
+            <div class="flex min-w-0 flex-col gap-0.5">
+              <p class="truncate ${C.name}"><a href="#detail" class="after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-(--accent)">${a.name}</a></p>
+              <div class="flex">${marks(a)}</div>
+            </div>
+          </div>
+          <div class="flex flex-col items-end gap-1 @3xl/f:contents">
+            <div class="flex flex-col items-end text-right">
+              ${a.rating != null
+                ? `<p class="${C.name} tabular-nums">${a.rating.toFixed(1)}${star}</p><p class="${C.muted}">${a.newReviews} new</p>`
+                : `<p class="${C.muted}">No rating yet</p>`}
+            </div>
+            <div class="flex flex-col items-end text-right">
+              ${a.crash != null
+                ? `<p class="flex items-center gap-3 ${C.muted}">${spark(a.key, 'h-6 w-16')}<span class="${C.strong}">${a.crash.toFixed(2)}%</span></p>
+                   ${over ? `<p class="flex items-start gap-1.5 text-base/7 text-amber-700 @lg/f:text-sm/6 dark:text-amber-400">${I.warn}<span>Over the ${LIMIT}% limit</span></p>` : ''}`
+                : ''}
+            </div>
+          </div>
+          <p class="col-span-full flex items-start gap-2 ${C.muted} @3xl/f:col-span-1 @3xl/f:justify-end @3xl/f:text-right">${I.lock}<span>${a.stores.length === 2 ? 'Add vendor number and reports folder' : unlockText(a)} · ${setUp}</span></p>
+        </li>`
+      }
+
+      function today() {
+        return `<div class="flex flex-col gap-6">
+          <div class="flex items-end justify-between gap-4">
+            <div class="flex min-w-0 flex-col gap-1">
+              <h1 class="text-2xl font-semibold tracking-tight">Today</h1>
+              <p class="${C.muted}">3 apps across 2 stores. Updated 2 minutes ago.</p>
+            </div>
+            <button type="button" class="${C.secondary} shrink-0">Refresh</button>
+          </div>
+          <div class="flex flex-col [--cols:minmax(0,1fr)_9rem_13rem_17rem]">
+            <div class="grid grid-cols-(--cols) gap-x-4 border-b border-zinc-950/5 pb-2 text-sm/6 font-medium whitespace-nowrap text-zinc-500 @max-3xl/f:hidden dark:border-white/10 dark:text-zinc-400" aria-hidden="true">
+              <span>App</span><span class="text-right">Rating</span><span class="text-right">Crash rate · 30 days</span><span class="text-right">Downloads &amp; proceeds</span>
+            </div>
+            <ul role="list" class="divide-y divide-zinc-950/5 dark:divide-white/10">${APPS.map(rowMetrics).join('')}</ul>
+          </div>
+        </div>`
+      }
+
+      // ---------- App detail ----------
+      function crashChart(fx) {
+        const vals = SERIES.sproutly
+        const max = 1.2
+        const xy = vals.map((v, i) => [(i / (N - 1)) * 100, 100 - (v / max) * 100])
+        const line = xy.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ')
+        const area = `M0,100 L${line.replaceAll(' ', ' L')} L100,100 Z`
+        const yAt = (v) => (100 - (v / max) * 100).toFixed(2)
+        const ticks = [0, 0.4, 0.8]
+        const peak = Math.max(...vals)
+        const peakDay = day(vals.indexOf(peak))
+        return `<section aria-labelledby="${fx}-crash" class="flex flex-col gap-5 rounded-xl p-5 ring-1 ring-zinc-950/10 dark:bg-white/2.5 dark:ring-white/10">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex min-w-0 flex-col gap-1">
+              <h2 id="${fx}-crash" class="flex items-center gap-2 ${C.h2}">${mark('android')}<span>Crash rate</span></h2>
+              <p class="${C.muted} text-pretty">Share of daily Android users who saw a crash.</p>
+            </div>
+            <p class="shrink-0 ${C.muted}">Last 30 days</p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <p class="text-3xl font-semibold tracking-tight">0.42%</p>
+            <p class="${C.muted}">Oct 3 · down from 0.61% on Sep 4</p>
+            <p class="flex items-start gap-1.5 ${C.muted}">${I.check}<span>Well under Google’s ${LIMIT}% limit.</span></p>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2">
+            <div data-plot="sproutly" data-max="${max}" tabindex="0" role="group"
+              aria-label="Crash rate over the last 30 days: 0.61% on Sep 4, peaking at ${peak}% on ${peakDay}, 0.42% on Oct 3. Use the arrow keys to read each day."
+              class="group relative h-44 touch-pan-y rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--accent)"
+              style="--hx:100%;--hy:${yAt(vals[N - 1])}%;--tx:-100%">
+              ${ticks.map((t) => `<span class="absolute inset-x-0 top-(--y) h-px bg-zinc-950/5 dark:bg-white/10" style="--y:${yAt(t)}%"></span>`).join('')}
+              <span class="absolute inset-x-0 top-(--y) h-px bg-amber-500/60" style="--y:${yAt(LIMIT)}%"></span>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 size-full overflow-visible" aria-hidden="true">
+                <path d="${area}" class="fill-zinc-950/5 dark:fill-white/5"/>
+                <polyline points="${line}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class="stroke-zinc-950 dark:stroke-white"/>
+              </svg>
+              <span class="pointer-events-none absolute inset-y-0 left-(--hx) w-px bg-zinc-950/20 group-not-data-active:hidden dark:bg-white/25" aria-hidden="true"></span>
+              <span class="pointer-events-none absolute top-(--hy) left-(--hx) size-2.5 -translate-1/2 rounded-full bg-zinc-950 ring-2 ring-white dark:bg-white dark:ring-zinc-900" aria-hidden="true"></span>
+              <div aria-live="polite" class="pointer-events-none absolute -top-2 left-(--hx) flex translate-x-(--tx) flex-col rounded-lg bg-white px-2.5 py-1.5 whitespace-nowrap shadow-md ring-1 ring-zinc-950/10 group-not-data-active:hidden dark:bg-zinc-800 dark:shadow-none dark:ring-white/10">
+                <p class="text-sm/5 font-medium tabular-nums" data-tip-v></p>
+                <p class="text-sm/5 text-zinc-500 dark:text-zinc-400" data-tip-d></p>
+              </div>
+            </div>
+            <div class="relative w-20 text-xs/5 whitespace-nowrap text-zinc-500 tabular-nums dark:text-zinc-400" aria-hidden="true">
+              ${ticks.map((t) => `<span class="absolute top-(--y) left-0 -translate-y-1/2" style="--y:${yAt(t)}%">${t === 0 ? '0%' : t.toFixed(1) + '%'}</span>`).join('')}
+              <span class="absolute top-(--y) left-0 -translate-y-1/2 text-amber-700 dark:text-amber-400" style="--y:${yAt(LIMIT)}%">${LIMIT}% limit</span>
+            </div>
+            <div class="flex justify-between text-xs/5 text-zinc-500 tabular-nums dark:text-zinc-400" aria-hidden="true"><span>Sep 4</span><span>Sep 19</span><span>Oct 3</span></div>
+          </div>
+        </section>`
+      }
+
+      function ratings(fx) {
+        return `<section aria-labelledby="${fx}-ratings" class="flex flex-col gap-4">
+          <h2 id="${fx}-ratings" class="${C.h2}">Ratings</h2>
+          <dl class="grid gap-4 @lg/f:grid-cols-2 @lg/f:gap-0">
+            <div class="flex flex-col gap-1 @lg/f:pr-6">
+              <dt class="flex items-center gap-2 ${C.muted}">${mark('ios')}<span>App Store</span></dt>
+              <dd class="text-2xl font-semibold tracking-tight">4.7<span class="text-zinc-400" aria-hidden="true"> ★</span><span class="sr-only"> stars</span> <span class="text-base font-normal tracking-normal text-zinc-500 dark:text-zinc-400">(US)</span></dd>
+              <dd class="${C.muted}">1,284 ratings · 3 new reviews</dd>
+            </div>
+            <div class="flex flex-col gap-1 border-t border-zinc-950/5 pt-4 @lg/f:border-t-0 @lg/f:border-l @lg/f:pt-0 @lg/f:pl-6 dark:border-white/10">
+              <dt class="flex items-center gap-2 ${C.muted}">${mark('android')}<span>Google Play</span></dt>
+              <dd class="${C.body} text-pretty">Add your reports folder to see this rating.</dd>
+              <dd class="${C.body}">${setUp}</dd>
+            </div>
+          </dl>
+        </section>`
+      }
+
+      function locked(fx) {
+        return `<section aria-labelledby="${fx}-locked" class="flex flex-col gap-4 p-4 ${C.dashed}">
+          <h2 id="${fx}-locked" class="sr-only">Downloads and proceeds</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex min-w-0 flex-col gap-2"><p class="truncate ${C.name}">Downloads</p>${ghostBars(12)}</div>
+            <div class="flex min-w-0 flex-col gap-2"><p class="truncate ${C.name}">Proceeds</p>${ghostBars(12)}</div>
+          </div>
+          <div class="flex flex-col gap-2 @lg/f:flex-row @lg/f:items-start @lg/f:justify-between @lg/f:gap-6">
+            <p class="flex items-start gap-2 ${C.muted}">${I.lock}<span>iOS: add your vendor number · Android: add your reports folder</span></p>
+            <p class="shrink-0 pl-6 ${C.body} @lg/f:pl-0">${setUp}</p>
+          </div>
+        </section>`
+      }
+
+      function reviewItem(r) {
+        const stars = Array.from({ length: 5 }, (_, i) => `<span class="${i < r.stars ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-950/15 dark:text-white/15'}">★</span>`).join('')
+        return `<li class="flex flex-col gap-1.5 py-5" data-low="${r.stars <= 2}" data-unread="${r.unread}">
+          <div class="flex items-center justify-between gap-3">
+            <p class="flex gap-0.5 text-base/6" role="img" aria-label="${r.stars} out of 5 stars">${stars}</p>
+            <p class="${C.muted} tabular-nums">${r.date}</p>
+          </div>
+          <h3 class="flex items-center gap-2 ${C.name}">${r.unread ? '<span class="size-2 shrink-0 rounded-full bg-(--accent)" aria-hidden="true"></span><span class="sr-only">Unread: </span>' : ''}${r.title}</h3>
+          <p class="${C.body} text-pretty text-zinc-700 dark:text-zinc-300">${r.body}</p>
+          <p class="${C.muted}">${r.who} · ${r.where} · Version ${r.version}</p>
+        </li>`
+      }
+
+      function reviews(fx) {
+        const unread = REVIEWS.filter((r) => r.unread).length
+        const low = REVIEWS.filter((r) => r.stars <= 2).length
+        const seg = (f, label, n, on) =>
+          `<button type="button" data-filter="${f}" aria-pressed="${on}" class="flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-base/6 font-medium whitespace-nowrap text-zinc-500 aria-pressed:bg-white aria-pressed:text-zinc-950 aria-pressed:shadow-xs aria-pressed:ring-1 aria-pressed:ring-zinc-950/5 @lg/f:py-1 @lg/f:text-sm/6 dark:text-zinc-400 dark:aria-pressed:bg-zinc-800 dark:aria-pressed:text-white dark:aria-pressed:shadow-none dark:aria-pressed:ring-white/10">${label}<span class="font-normal text-zinc-400 tabular-nums dark:text-zinc-500">${n}</span></button>`
+        return `<section aria-labelledby="${fx}-reviews" class="flex flex-col gap-4" data-reviews>
+          <div class="flex flex-col gap-3 @lg/f:flex-row @lg/f:items-end @lg/f:justify-between @lg/f:gap-6">
+            <div class="flex min-w-0 flex-col gap-1">
+              <h2 id="${fx}-reviews" class="flex items-center gap-2 ${C.h2}">${mark('ios')}<span>Reviews</span></h2>
+              <p class="${C.muted} text-pretty">From the App Store. Google Play reviews are coming in a later update.</p>
+            </div>
+            <div role="group" aria-label="Filter reviews" class="grid shrink-0 grid-cols-3 rounded-lg bg-zinc-950/5 p-0.5 dark:bg-white/5">
+              ${seg('all', 'All', REVIEWS.length, true)}${seg('low', '1–2 ★', low, false)}${seg('unread', 'Unread', unread, false)}
+            </div>
+          </div>
+          <ul role="list" class="divide-y divide-zinc-950/5 border-t border-zinc-950/5 dark:divide-white/10 dark:border-white/10">${REVIEWS.map(reviewItem).join('')}</ul>
+          <p class="${C.body}"><a href="#" class="inline-flex items-center gap-1 ${C.link}">Open in App Store Connect${I.ext}</a></p>
+        </section>`
+      }
+
+      function detail(fx) {
+        const sproutly = APPS[0]
+        const header = `<div class="flex flex-col gap-4">
+          <a href="#today" class="${C.quiet} -ml-1.5 self-start pl-1.5">${I.back}Today</a>
+          <div class="flex items-start gap-4">
+            <span class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-950/5 text-xl font-semibold text-zinc-700 dark:bg-white/10 dark:text-zinc-200" aria-hidden="true">S</span>
+            <div class="flex min-w-0 flex-col gap-1">
+              <div class="flex min-w-0 items-center gap-2.5"><h1 class="truncate text-2xl font-semibold tracking-tight">Sproutly</h1>${marks(sproutly)}</div>
+              <p class="flex flex-wrap items-start gap-x-2 ${C.muted}">${I.link}<span>Linked: iOS + Android</span><span aria-hidden="true">·</span><a href="#link-apps" class="${C.link}">Change</a></p>
+            </div>
+          </div>
+        </div>`
+        return `<div class="flex max-w-3xl flex-col gap-10">${header}${ratings(fx)}${crashChart(fx)}${locked(fx)}${reviews(fx)}</div>`
+      }
+
+      // ---------- Link apps sheet ----------
+      const IOS = [
+        { id: 'sproutly-ios', name: 'Sproutly', bundle: 'com.tntstudios.sproutly', store: 'ios' },
+        { id: 'tidepool-ios', name: 'Tidepool', bundle: 'com.tntstudios.tidepool', store: 'ios' },
+      ]
+      const AND = [
+        { id: 'sproutly-and', name: 'Sproutly', bundle: 'com.tntstudios.sproutly', store: 'android' },
+        { id: 'inkwell-and', name: 'Inkwell', bundle: 'com.tntstudios.inkwell', store: 'android' },
+      ]
+      const byId = (id) => [...IOS, ...AND].find((a) => a.id === id)
+      const sheetState = { pairs: [{ ios: 'sproutly-ios', android: 'sproutly-and', how: 'auto' }], editing: null }
+
+      function selectEl({ id, label, options, value, data }) {
+        return `<div class="inline-grid min-w-0 grid-cols-[1fr_--spacing(8)]">
+          <select id="${id}" name="${id}" ${label ? `aria-label="${label}"` : ''} ${data} class="col-span-full row-start-1 min-w-0 appearance-none rounded-lg bg-white py-2 pr-8 pl-3 text-base/6 ring-1 ring-zinc-950/15 focus:outline-2 focus:-outline-offset-1 focus:outline-(--accent) @lg/f:py-1.5 @lg/f:text-sm/6 dark:bg-white/5 dark:ring-white/15 dark:scheme-dark">
+            ${options.map((o) => `<option value="${o.value}" ${o.value === value ? 'selected' : ''}>${o.label}</option>`).join('')}
+          </select>
+          <svg viewBox="0 0 8 5" width="8" height="5" fill="none" class="pointer-events-none col-start-2 row-start-1 place-self-center stroke-zinc-500" aria-hidden="true"><path d="M.5.5 4 4 7.5.5"/></svg>
+        </div>`
+      }
+
+      const side = (a) => `<div class="flex min-w-0 flex-col">
+          <p class="flex min-w-0 items-center gap-1.5 ${C.name}">${mark(a.store)}<span class="truncate">${a.name}</span></p>
+          <p class="truncate font-mono text-sm/6 text-zinc-500 @lg/f:text-xs/5 dark:text-zinc-400">${a.bundle}</p>
+        </div>`
+
+      function sheet(fx) {
+        const s = sheetState
+        const linkedIds = s.pairs.flatMap((p) => [p.ios, p.android])
+        const loose = [...IOS, ...AND].filter((a) => !linkedIds.includes(a.id))
+        const pairItem = (p, i) => {
+          const ios = byId(p.ios), and = byId(p.android)
+          const editing = s.editing === i
+          const choices = AND.filter((a) => a.id === p.android || !linkedIds.includes(a.id))
+          return `<li class="flex flex-col gap-3 rounded-xl p-3 ring-1 ring-zinc-950/10 dark:ring-white/10">
+            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">${side(ios)}<span class="flex">${I.link}</span>${side(and)}</div>
+            ${editing
+              ? `<div class="flex flex-col gap-2">
+                  <label for="${fx}-pair-${i}" class="${C.name}">Android app for ${ios.name}</label>
+                  ${selectEl({ id: `${fx}-pair-${i}`, options: choices.map((a) => ({ value: a.id, label: `${a.name} (${a.bundle})` })), value: p.android, data: `data-pair="${i}"` })}
+                </div>`
+              : ''}
+            <div class="flex items-center justify-between gap-3 border-t border-zinc-950/5 pt-2 dark:border-white/10">
+              <p class="flex min-w-0 items-start gap-1.5 ${C.muted}">${p.how === 'auto' ? `${I.check}<span>Matched by bundle ID</span>` : '<span>Linked by you</span>'}</p>
+              <div class="-mr-1 flex shrink-0 gap-1">
+                <button type="button" class="${C.quiet}" data-sheet="change" data-i="${i}">${editing ? 'Done' : 'Change'}</button>
+                <button type="button" class="${C.quiet}" data-sheet="unlink" data-i="${i}">Unlink</button>
+              </div>
+            </div>
+          </li>`
+        }
+        const looseItem = (a) => {
+          const other = (a.store === 'ios' ? AND : IOS).filter((o) => !linkedIds.includes(o.id))
+          const otherName = a.store === 'ios' ? 'an Android app' : 'an iOS app'
+          return `<li class="flex flex-col gap-2 py-3 @lg/f:flex-row @lg/f:items-center @lg/f:justify-between @lg/f:gap-4">
+            ${side(a)}
+            ${other.length
+              ? `<div class="shrink-0">${selectEl({ id: `${fx}-loose-${a.id}`, label: `Link ${a.name} with ${otherName}`, options: [{ value: '', label: 'Not linked' }, ...other.map((o) => ({ value: o.id, label: `Link with ${o.name}` }))], value: '', data: `data-loose="${a.id}"` })}</div>`
+              : `<p class="${C.muted}">Nothing to link with</p>`}
+          </li>`
+        }
+        return `<div class="flex flex-col gap-6">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex min-w-0 flex-col gap-1">
+              <h2 id="${fx}-link-title" class="text-lg font-semibold">Link apps</h2>
+              <p class="${C.muted} text-pretty">Linked apps share one row on Today. Appgotchi links apps with the same bundle ID for you.</p>
+            </div>
+            <button type="button" class="relative -m-1 shrink-0 rounded-lg p-2 hover:bg-zinc-950/5 dark:hover:bg-white/5" aria-label="Close">${I.x}<span class="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden" aria-hidden="true"></span></button>
+          </div>
+          <section aria-labelledby="${fx}-linked" class="flex flex-col gap-3">
+            <h3 id="${fx}-linked" class="${C.name} text-zinc-500 dark:text-zinc-400">Linked</h3>
+            ${s.pairs.length ? `<ul role="list" class="flex flex-col gap-3">${s.pairs.map(pairItem).join('')}</ul>` : `<p class="${C.muted}">No linked apps.</p>`}
+          </section>
+          <section aria-labelledby="${fx}-loose" class="flex flex-col gap-1">
+            <h3 id="${fx}-loose" class="${C.name} text-zinc-500 dark:text-zinc-400">On one store only</h3>
+            ${loose.length ? `<ul role="list" class="divide-y divide-zinc-950/5 dark:divide-white/10">${loose.map(looseItem).join('')}</ul>` : `<p class="${C.muted}">Every app is linked.</p>`}
+          </section>
+          <div class="flex items-center justify-end gap-2 border-t border-zinc-950/5 pt-4 dark:border-white/10">
+            <button type="button" class="${C.quiet}">Cancel</button>
+            <button type="button" class="${C.primary}">Save</button>
+          </div>
+        </div>`
+      }
+
+      // ---------- frames ----------
+      function desktopApp(main) {
+        return `<div class="flex items-center justify-between gap-4 border-b border-zinc-950/5 px-8 py-3 dark:border-white/10">
+            <div class="flex items-center gap-6">
+              <p class="flex items-center gap-2 text-sm/6 font-semibold"><span class="size-2.5 shrink-0 rounded-full bg-(--accent)" aria-hidden="true"></span>Appgotchi</p>
+              <nav aria-label="Main" class="flex gap-1">
+                <a href="#today" aria-current="page" class="rounded-lg bg-zinc-950/5 px-2.5 py-1 text-sm/6 font-medium dark:bg-white/10">Today</a>
+                <a href="#" class="rounded-lg px-2.5 py-1 text-sm/6 font-medium text-zinc-500 hover:bg-zinc-950/5 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white">Settings</a>
+              </nav>
+            </div>
+          </div>
+          <div class="px-8 py-8">${main}</div>`
+      }
+      function phoneApp(main) {
+        return `<div class="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 [scrollbar-width:none]">${main}</div>
+          <nav aria-label="Main" class="grid shrink-0 grid-cols-2 gap-2 border-t border-zinc-950/5 px-6 pt-2 pb-7 dark:border-white/10">
+            <a href="#today" aria-current="page" class="rounded-full bg-zinc-950/5 py-2 text-center text-base/6 font-medium dark:bg-white/10">Today</a>
+            <a href="#" class="rounded-full py-2 text-center text-base/6 font-medium text-zinc-500 hover:bg-zinc-950/5 dark:text-zinc-400 dark:hover:bg-white/5">Settings</a>
+          </nav>`
+      }
+      const caption = (t) => `<figcaption class="text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">${t}</figcaption>`
+      function desktopFrame(inner, label) {
+        return `<figure class="flex max-w-full min-w-0 flex-col gap-3">
+          ${caption(label)}
+          <div class="-m-3 overflow-x-auto p-3">
+            <div class="w-[1100px] overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-zinc-950/10 dark:bg-zinc-950 dark:shadow-none dark:ring-white/10">
+              <div class="flex gap-1.5 border-b border-zinc-950/5 bg-zinc-50 px-4 py-3 dark:border-white/10 dark:bg-zinc-900" aria-hidden="true"><span class="size-2.5 rounded-full bg-zinc-950/10 dark:bg-white/15"></span><span class="size-2.5 rounded-full bg-zinc-950/10 dark:bg-white/15"></span><span class="size-2.5 rounded-full bg-zinc-950/10 dark:bg-white/15"></span></div>
+              <div class="@container/f relative">${inner}</div>
+            </div>
+          </div>
+        </figure>`
+      }
+      function phoneFrame(inner, label) {
+        return `<figure class="flex max-w-full shrink-0 flex-col gap-3">
+          ${caption(label)}
+          <div class="flex h-[844px] w-[390px] max-w-full flex-col overflow-hidden rounded-[3rem] bg-white shadow-sm ring-1 ring-zinc-950/10 dark:bg-zinc-950 dark:shadow-none dark:ring-white/15">
+            <div class="grid shrink-0 grid-cols-3 items-center px-8 pt-4 pb-2" aria-hidden="true">
+              <span class="text-sm/6 font-semibold tabular-nums">9:41</span>
+              <span class="h-7 w-24 justify-self-center rounded-full bg-zinc-950 dark:bg-zinc-800"></span>
+              <span></span>
+            </div>
+            <div class="@container/f relative flex min-h-0 flex-1 flex-col">${inner}</div>
+          </div>
+        </figure>`
+      }
+      const row = (a, b) => `<div class="flex flex-wrap items-start gap-x-10 gap-y-10">${a}${b}</div>`
+
+      function frames(screen) {
+        const fx = screen
+        if (screen === 'today') return row(desktopFrame(desktopApp(today()), 'Desktop · 1100 px'), phoneFrame(phoneApp(today()), 'Phone · 390 px'))
+        if (screen === 'detail') return row(desktopFrame(desktopApp(detail(`${fx}-d`)), 'Desktop · 1100 px'), phoneFrame(phoneApp(detail(`${fx}-p`)), 'Phone · 390 px'))
+        // Link apps: dialog on desktop, bottom sheet on phone, over a dimmed Today
+        const d = `<div inert class="min-h-[860px]">${desktopApp(today())}</div>
+          <div class="absolute inset-0 flex items-start justify-center bg-zinc-950/25 p-8 pt-20 dark:bg-black/60">
+            <div role="dialog" aria-modal="true" aria-labelledby="${fx}-d-link-title" class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl ring-1 ring-zinc-950/10 dark:bg-zinc-900 dark:shadow-none dark:ring-white/10">${sheet(`${fx}-d`)}</div>
+          </div>`
+        const p = `<div inert class="flex min-h-0 flex-1 flex-col">${phoneApp(today())}</div>
+          <div class="absolute inset-0 flex flex-col justify-end bg-zinc-950/25 dark:bg-black/60">
+            <div role="dialog" aria-modal="true" aria-labelledby="${fx}-p-link-title" class="flex max-h-[88%] flex-col gap-3 overflow-y-auto rounded-t-3xl bg-white px-4 pt-2 pb-8 dark:bg-zinc-900">
+              <span class="h-1 w-9 shrink-0 self-center rounded-full bg-zinc-950/15 dark:bg-white/20" aria-hidden="true"></span>
+              ${sheet(`${fx}-p`)}
+            </div>
+          </div>`
+        return row(desktopFrame(d, 'Desktop · 1100 px'), phoneFrame(p, 'Phone · 390 px'))
+      }
+
+      // ---------- behaviour ----------
+      function bindPlots(root) {
+        root.querySelectorAll('[data-plot]').forEach((p) => {
+          const vals = SERIES[p.dataset.plot]
+          const max = +p.dataset.max
+          const set = (i, active) => {
+            const x = (i / (N - 1)) * 100
+            p.style.setProperty('--hx', `${x}%`)
+            p.style.setProperty('--hy', `${100 - (vals[i] / max) * 100}%`)
+            p.style.setProperty('--tx', x < 18 ? '0%' : x > 82 ? '-100%' : '-50%')
+            p.querySelector('[data-tip-v]').textContent = `${vals[i].toFixed(2)}% of daily users`
+            p.querySelector('[data-tip-d]').textContent = day(i) + (NOTES[i] ? ` · ${NOTES[i]}` : '')
+            p.toggleAttribute('data-active', active)
+            p.dataset.i = i
+          }
+          const fromEvent = (e) => {
+            const r = p.getBoundingClientRect()
+            return Math.round(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * (N - 1))
+          }
+          p.addEventListener('pointermove', (e) => set(fromEvent(e), true))
+          p.addEventListener('pointerdown', (e) => set(fromEvent(e), true))
+          p.addEventListener('pointerleave', () => set(N - 1, false))
+          p.addEventListener('blur', () => set(N - 1, false))
+          p.addEventListener('keydown', (e) => {
+            let i = p.hasAttribute('data-active') ? +p.dataset.i : N
+            if (e.key === 'ArrowLeft') i -= 1
+            else if (e.key === 'ArrowRight') i += 1
+            else return
+            e.preventDefault()
+            set(Math.max(0, Math.min(N - 1, i)), true)
+          })
+        })
+      }
+
+      function renderAll() {
+        document.querySelectorAll('[data-frames]').forEach((el) => {
+          el.innerHTML = frames(el.dataset.frames)
+        })
+        bindPlots(document)
+      }
+      function renderSheets() {
+        const el = document.querySelector('[data-frames="sheet"]')
+        el.innerHTML = frames('sheet')
+      }
+
+      document.addEventListener('click', (e) => {
+        const f = e.target.closest('[data-filter]')
+        if (f) {
+          const box = f.closest('[data-reviews]')
+          box.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === f)))
+          box.querySelectorAll('li[data-low]').forEach((li) => {
+            const show = f.dataset.filter === 'all' || (f.dataset.filter === 'low' ? li.dataset.low === 'true' : li.dataset.unread === 'true')
+            li.hidden = !show
+          })
+        }
+        const s = e.target.closest('[data-sheet]')
+        if (s) {
+          const i = +s.dataset.i
+          if (s.dataset.sheet === 'change') sheetState.editing = sheetState.editing === i ? null : i
+          if (s.dataset.sheet === 'unlink') { sheetState.pairs.splice(i, 1); sheetState.editing = null }
+          renderSheets()
+        }
+      })
+      document.addEventListener('change', (e) => {
+        const t = e.target
+        if (t.dataset.pair) {
+          const p = sheetState.pairs[+t.dataset.pair]
+          if (p.android !== t.value) Object.assign(p, { android: t.value, how: 'manual' })
+          sheetState.editing = null
+          renderSheets()
+        }
+        if (t.dataset.loose && t.value) {
+          const a = byId(t.dataset.loose)
+          sheetState.pairs.push(a.store === 'ios' ? { ios: a.id, android: t.value, how: 'manual' } : { ios: t.value, android: a.id, how: 'manual' })
+          renderSheets()
+        }
+      })
+
+      // Prototype-only preview control for checking dark mode (starts from the OS setting)
+      const modeBtn = document.getElementById('mode')
+      const setMode = (dark) => {
+        document.documentElement.classList.toggle('dark', dark)
+        modeBtn.textContent = dark ? 'Light preview' : 'Dark preview'
+      }
+      setMode(window.matchMedia('(prefers-color-scheme: dark)').matches)
+      modeBtn.addEventListener('click', () => setMode(!document.documentElement.classList.contains('dark')))
+
+      renderAll()
+    </script>
+  </body>
+</html>
