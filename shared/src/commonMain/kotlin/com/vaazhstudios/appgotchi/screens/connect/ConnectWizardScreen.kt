@@ -2,6 +2,7 @@ package com.vaazhstudios.appgotchi.screens.connect
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,7 @@ import com.vaazhstudios.appgotchi.ui.components.QuietButton
 import com.vaazhstudios.appgotchi.ui.components.SecondaryButton
 import com.vaazhstudios.appgotchi.ui.components.SegmentedControl
 import com.vaazhstudios.appgotchi.ui.components.appTextFieldColors
+import com.vaazhstudios.appgotchi.ui.components.focusRing
 import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitType
@@ -317,9 +319,11 @@ private fun KeyFileField(
 ) {
     if (fileName == null) {
         FileDropZone(onFileDropped = onDropped, modifier = Modifier.fillMaxWidth()) { isDragging ->
+            val interactionSource = remember { MutableInteractionSource() }
             OutlinedCard(
                 onClick = onPick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRing(interactionSource, MaterialTheme.shapes.medium),
+                interactionSource = interactionSource,
                 border = BorderStroke(
                     width = if (isDragging) 2.dp else 1.dp,
                     color = if (isDragging) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline,
