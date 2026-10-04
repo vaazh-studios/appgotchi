@@ -3,6 +3,7 @@ package com.vaazhstudios.appgotchi.di
 import com.vaazhstudios.appgotchi.data.AppsRepository
 import com.vaazhstudios.appgotchi.data.CredentialStore
 import com.vaazhstudios.appgotchi.data.DefaultStoreClientFactory
+import com.vaazhstudios.appgotchi.data.DemoMode
 import com.vaazhstudios.appgotchi.data.KSafeCredentialStore
 import com.vaazhstudios.appgotchi.data.StoreClientFactory
 import com.vaazhstudios.appgotchi.screens.connect.ConnectWizardViewModel
@@ -27,6 +28,7 @@ val appModule = module {
     single<StoreClientFactory> { DefaultStoreClientFactory(get()) }
     single<CredentialStore> { KSafeCredentialStore(lazy { get<KSafe>() }) }
     single { AppsRepository(get(), get()) }
+    single { DemoMode() }
     viewModelOf(::ConnectWizardViewModel)
     viewModelOf(::TodayViewModel)
 }
