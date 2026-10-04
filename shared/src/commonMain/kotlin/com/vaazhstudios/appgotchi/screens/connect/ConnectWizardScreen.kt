@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,19 +22,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +60,13 @@ import com.vaazhstudios.appgotchi.data.MAX_KEY_FILE_BYTES
 import com.vaazhstudios.appgotchi.data.displayName
 import com.vaazhstudios.appgotchi.data.hasExtension
 import com.vaazhstudios.appgotchi.data.keyIdFromFileName
+import com.vaazhstudios.appgotchi.ui.components.AppCard
+import com.vaazhstudios.appgotchi.ui.components.PrimaryButton
+import com.vaazhstudios.appgotchi.ui.components.QuietButton
+import com.vaazhstudios.appgotchi.ui.components.SecondaryButton
+import com.vaazhstudios.appgotchi.ui.components.SegmentedControl
+import com.vaazhstudios.appgotchi.ui.components.appTextFieldColors
+import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
@@ -142,7 +145,7 @@ fun ConnectWizardScreen(
             modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            TextButton(onClick = onBack) { Text(stringResource(Res.string.wizard_close)) }
+            QuietButton(onClick = onBack) { Text(stringResource(Res.string.wizard_close)) }
             StorePicker(state.store, enabled = state.status != WizardStatus.Verifying, onSelect = viewModel::selectStore)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StepProgress(state.step)
@@ -173,22 +176,11 @@ fun ConnectWizardScreen(
 
 @Composable
 private fun StorePicker(selected: Store, enabled: Boolean, onSelect: (Store) -> Unit) {
-    val labels = mapOf(
-        Store.AppStore to Res.string.wizard_store_app_store,
-        Store.GooglePlay to Res.string.wizard_store_google_play,
+    val options = listOf(
+        Store.AppStore to stringResource(Res.string.wizard_store_app_store),
+        Store.GooglePlay to stringResource(Res.string.wizard_store_google_play),
     )
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        Store.entries.forEachIndexed { index, store ->
-            SegmentedButton(
-                selected = store == selected,
-                onClick = { onSelect(store) },
-                enabled = enabled,
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = Store.entries.size),
-            ) {
-                Text(stringResource(labels.getValue(store)))
-            }
-        }
-    }
+    SegmentedControl(options = options, selected = selected, onSelect = onSelect, enabled = enabled, modifier = Modifier.fillMaxWidth())
 }
 
 @Composable
@@ -200,7 +192,7 @@ private fun StepProgress(step: Int) {
                     .weight(1f)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(if (index <= step) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
+                    .background(if (index <= step) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outlineVariant),
             )
         }
     }
@@ -220,7 +212,7 @@ private fun ExternalLinks(vararg links: Pair<StringResource, String>) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         links.forEach { (label, url) ->
             // Opening a browser can fail (no handler, unsupported desktop); never crash over it
-            OutlinedButton(onClick = { runCatching { uriHandler.openUri(url) } }) { Text(stringResource(label)) }
+            SecondaryButton(onClick = { runCatching { uriHandler.openUri(url) } }) { Text(stringResource(label)) }
         }
     }
 }
@@ -257,6 +249,7 @@ private fun AppStoreStep(
                         Text(stringResource(if (fromFileName) Res.string.apple_key_id_from_file else Res.string.apple_key_id_manual))
                     },
                     singleLine = true,
+                    colors = appTextFieldColors(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false),
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -270,6 +263,7 @@ private fun AppStoreStep(
                 label = { Text(stringResource(Res.string.apple_issuer_id)) },
                 singleLine = true,
                 enabled = state.status != WizardStatus.Verifying,
+                colors = appTextFieldColors(),
                 keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -328,8 +322,9 @@ private fun KeyFileField(
                 modifier = Modifier.fillMaxWidth(),
                 border = BorderStroke(
                     width = if (isDragging) 2.dp else 1.dp,
-                    color = if (isDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    color = if (isDragging) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline,
                 ),
+                colors = CardDefaults.outlinedCardColors(containerColor = AppgotchiTheme.colors.cardFill),
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = 16.dp),
@@ -347,9 +342,9 @@ private fun KeyFileField(
             }
         }
     } else {
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
+        AppCard(contentPadding = PaddingValues(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -357,7 +352,7 @@ private fun KeyFileField(
                     detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 val removeDescription = stringResource(Res.string.wizard_remove_file, fileName)
-                TextButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = removeDescription }) {
+                QuietButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = removeDescription }) {
                     Text(stringResource(Res.string.wizard_remove))
                 }
             }
@@ -376,9 +371,9 @@ private fun EmailRow(email: String) {
             copied = false
         }
     }
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+    AppCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -389,7 +384,7 @@ private fun EmailRow(email: String) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(
+            QuietButton(
                 onClick = {
                     scope.launch {
                         // The desktop clipboard can be locked by another app; a failed copy just shows no confirmation
@@ -414,14 +409,14 @@ private fun EmailRow(email: String) {
 private fun StatusNotice(state: ConnectWizardState) {
     when (state.status) {
         WizardStatus.Verifying -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(stringResource(Res.string.wizard_checking, state.store.displayName), style = MaterialTheme.typography.bodyMedium)
         }
-        WizardStatus.Waiting -> Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = MaterialTheme.shapes.medium) {
+        WizardStatus.Waiting -> Surface(color = AppgotchiTheme.colors.warningContainer, shape = MaterialTheme.shapes.medium) {
             Text(
                 stringResource(Res.string.play_waiting),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = AppgotchiTheme.colors.onWarningContainer,
                 modifier = Modifier.padding(12.dp),
             )
         }
@@ -433,7 +428,7 @@ private fun StatusNotice(state: ConnectWizardState) {
 private fun Footer(state: ConnectWizardState, viewModel: ConnectWizardViewModel) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (state.step > 0) {
-            TextButton(onClick = viewModel::back, enabled = state.status != WizardStatus.Verifying) {
+            QuietButton(onClick = viewModel::back, enabled = state.status != WizardStatus.Verifying) {
                 Text(stringResource(Res.string.wizard_back))
             }
         }
@@ -444,9 +439,9 @@ private fun Footer(state: ConnectWizardState, viewModel: ConnectWizardViewModel)
                 state.store == Store.AppStore -> Res.string.apple_verify
                 else -> Res.string.play_verify
             }
-            Button(onClick = viewModel::verify, enabled = state.canVerify) { Text(stringResource(label)) }
+            PrimaryButton(onClick = viewModel::verify, enabled = state.canVerify) { Text(stringResource(label)) }
         } else {
-            Button(onClick = viewModel::next, enabled = state.canContinue) { Text(stringResource(Res.string.wizard_continue)) }
+            PrimaryButton(onClick = viewModel::next, enabled = state.canContinue) { Text(stringResource(Res.string.wizard_continue)) }
         }
     }
 }
