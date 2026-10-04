@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -245,9 +246,10 @@ fun StepChecklist(items: List<ChecklistItem>, modifier: Modifier = Modifier) {
 fun ChoiceCard(
     title: String,
     description: String,
-    badge: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    badge: String = "",
+    icon: Painter? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
@@ -267,7 +269,11 @@ fun ChoiceCard(
                     .clearAndSetSemantics {},
                 contentAlignment = Alignment.Center,
             ) {
-                Text(badge, style = MaterialTheme.typography.titleSmall)
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
+                } else {
+                    Text(badge, style = MaterialTheme.typography.titleSmall)
+                }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)

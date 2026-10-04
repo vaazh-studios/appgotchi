@@ -1,0 +1,14 @@
+App Store and Google Play logos
+===============================
+
+shared/src/commonMain/composeResources/drawable/ic_app_store.xml and
+ic_google_play.xml are converted from Simple Icons 16.33.0
+(https://simpleicons.org, https://github.com/simple-icons/simple-icons).
+
+The Simple Icons SVG data is released under CC0 1.0 Universal
+(https://creativecommons.org/publicdomain/zero/1.0/).
+
+The logos themselves are trademarks of their owners: App Store is a trademark
+of Apple Inc. and Google Play is a trademark of Google LLC. Appgotchi uses them
+only to identify which store a connection is for. Appgotchi is not affiliated
+with, sponsored by or endorsed by Apple or Google.

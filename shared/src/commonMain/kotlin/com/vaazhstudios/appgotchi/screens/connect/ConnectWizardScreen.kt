@@ -53,8 +53,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import appgotchi.shared.generated.resources.Res
 import appgotchi.shared.generated.resources.*
+import appgotchi.shared.generated.resources.Res
+import appgotchi.shared.generated.resources.ic_app_store
+import appgotchi.shared.generated.resources.ic_google_play
 import com.vaazhstudios.appgotchi.core.data.Store
 import com.vaazhstudios.appgotchi.data.MAX_KEY_FILE_BYTES
 import com.vaazhstudios.appgotchi.data.displayName
@@ -83,6 +85,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -225,13 +228,13 @@ private fun StoreChooser(onChoose: (Store) -> Unit, onTryDemo: () -> Unit) {
         ChoiceCard(
             title = stringResource(Res.string.chooser_apple_title),
             description = stringResource(Res.string.chooser_apple_body),
-            badge = "A",
+            icon = painterResource(Res.drawable.ic_app_store),
             onClick = { onChoose(Store.AppStore) },
         )
         ChoiceCard(
             title = stringResource(Res.string.chooser_play_title),
             description = stringResource(Res.string.chooser_play_body),
-            badge = "G",
+            icon = painterResource(Res.drawable.ic_google_play),
             onClick = { onChoose(Store.GooglePlay) },
         )
     }
