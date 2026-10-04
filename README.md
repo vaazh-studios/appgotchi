@@ -49,4 +49,6 @@ Requires JDK 17+, Android SDK, and Xcode (for iOS).
 
 [Apache-2.0](LICENSE). Built by [Vaazh Studios](https://github.com/vaazh-studios), bootstrapped from JetBrains' [KMP-App-Template](https://github.com/Kotlin/KMP-App-Template).
 
+The UI uses the [Inter](https://rsms.me/inter/) typeface, licensed under the SIL Open Font License (see [THIRD_PARTY_LICENSES/Inter-OFL.txt](THIRD_PARTY_LICENSES/Inter-OFL.txt)).
+
 Appgotchi is not affiliated with Apple, Google, or Bandai.
