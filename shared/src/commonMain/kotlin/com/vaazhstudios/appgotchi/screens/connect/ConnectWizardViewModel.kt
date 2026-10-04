@@ -9,8 +9,11 @@ import com.vaazhstudios.appgotchi.core.play.PlayCredentials
 import com.vaazhstudios.appgotchi.data.CredentialStore
 import com.vaazhstudios.appgotchi.data.StoreClientFactory
 import com.vaazhstudios.appgotchi.data.cleanKeyFileText
+import com.vaazhstudios.appgotchi.data.developerAccountIdProblem
 import com.vaazhstudios.appgotchi.data.hasExtension
+import com.vaazhstudios.appgotchi.data.issuerIdProblem
 import com.vaazhstudios.appgotchi.data.keyIdFromFileName
+import com.vaazhstudios.appgotchi.data.looksLikePrivateKey
 import com.vaazhstudios.appgotchi.data.userMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,39 +26,72 @@ private const val APPLE_KEY_HEADER = "-----BEGIN PRIVATE KEY-----"
 
 enum class WizardStatus { Idle, Verifying, Waiting, Connected }
 
+enum class WizardScreen { Chooser, AppleChoice, AppleQuick, AppleGuided, PlayGuided }
+
+private const val PASTED_KEY_IN_ACCOUNT_ID =
+    "That looks like a private key, so Appgotchi didn’t keep it. Paste the Account ID: the long number under your developer name on Play Console’s home page."
+private const val PASTED_KEY_IN_ISSUER_ID =
+    "That looks like your private key, so Appgotchi didn’t keep it. The Issuer ID is the short ID shown above the keys list."
+
 data class KeyFile(val name: String, val text: String) {
     override fun toString() = "KeyFile(name=$name, text=***)"
 }
 
 data class ConnectWizardState(
-    val store: Store = Store.AppStore,
+    val screen: WizardScreen = WizardScreen.Chooser,
     val step: Int = 0,
     val appleKeyFile: KeyFile? = null,
     val keyId: String = "",
     val issuerId: String = "",
+    val developerAccountId: String = "",
     val playKeyFile: KeyFile? = null,
     val serviceAccountEmail: String? = null,
     val status: WizardStatus = WizardStatus.Idle,
     val error: String? = null,
 ) {
-    val isLastStep: Boolean get() = step == STEP_COUNT - 1
+    val store: Store?
+        get() = when (screen) {
+            WizardScreen.Chooser -> null
+            WizardScreen.PlayGuided -> Store.GooglePlay
+            else -> Store.AppStore
+        }
 
-    /** Only the file step (index 1) has a requirement before moving on. */
+    val stepCount: Int
+        get() = when (screen) {
+            WizardScreen.AppleGuided -> APPLE_STEPS
+            WizardScreen.PlayGuided -> PLAY_STEPS
+            else -> 1
+        }
+
+    val isLastStep: Boolean get() = step == stepCount - 1
+
+    val developerAccountIdError: String? get() = developerAccountIdProblem(developerAccountId)
+
+    val issuerIdError: String? get() = issuerIdProblem(issuerId)
+
+    /** Steps with a requirement: Apple's file step, Play's account ID step and Play's key step. */
     val canContinue: Boolean
-        get() = when {
-            step != 1 -> true
-            store == Store.AppStore -> appleKeyFile != null && keyId.isNotBlank()
-            else -> serviceAccountEmail != null
+        get() = when (screen) {
+            WizardScreen.AppleGuided -> step != 1 || (appleKeyFile != null && keyId.isNotBlank())
+            WizardScreen.PlayGuided -> when (step) {
+                0 -> developerAccountId.isNotBlank() && developerAccountIdError == null
+                3 -> serviceAccountEmail != null
+                else -> true
+            }
+            else -> false
         }
 
     val canVerify: Boolean
-        get() = status != WizardStatus.Verifying && status != WizardStatus.Connected && when (store) {
-            Store.AppStore -> appleKeyFile != null && keyId.isNotBlank() && issuerId.isNotBlank()
-            Store.GooglePlay -> playKeyFile != null && serviceAccountEmail != null
+        get() = status != WizardStatus.Verifying && status != WizardStatus.Connected && when (screen) {
+            WizardScreen.AppleQuick, WizardScreen.AppleGuided ->
+                appleKeyFile != null && keyId.isNotBlank() && issuerId.isNotBlank() && issuerIdError == null
+            WizardScreen.PlayGuided -> playKeyFile != null && serviceAccountEmail != null
+            else -> false
         }
 
     companion object {
-        const val STEP_COUNT = 3
+        const val APPLE_STEPS = 3
+        const val PLAY_STEPS = 6
     }
 }
 
@@ -66,24 +102,41 @@ class ConnectWizardViewModel(
     private val _state = MutableStateFlow(ConnectWizardState())
     val state: StateFlow<ConnectWizardState> = _state.asStateFlow()
 
-    fun selectStore(store: Store) {
-        _state.update {
-            if (it.status == WizardStatus.Verifying || it.store == store) it
-            else it.copy(store = store, step = 0, status = WizardStatus.Idle, error = null)
+    fun chooseStore(store: Store) {
+        navigate {
+            if (it.screen != WizardScreen.Chooser) it
+            else it.copy(screen = if (store == Store.AppStore) WizardScreen.AppleChoice else WizardScreen.PlayGuided, step = 0)
         }
     }
 
-    fun next() {
-        _state.update { if (it.canContinue && !it.isLastStep) it.copy(step = it.step + 1, error = null) else it }
+    fun chooseAppleQuick() {
+        navigate { if (it.screen == WizardScreen.AppleChoice) it.copy(screen = WizardScreen.AppleQuick, step = 0) else it }
     }
 
+    fun chooseAppleGuided() {
+        navigate { if (it.screen == WizardScreen.AppleChoice) it.copy(screen = WizardScreen.AppleGuided, step = 0) else it }
+    }
+
+    fun next() {
+        navigate { if (it.canContinue && !it.isLastStep) it.copy(step = it.step + 1) else it }
+    }
+
+    /** Previous step, or up one screen: Apple paths → key choice → chooser; Play → chooser. */
     fun back() {
-        _state.update {
-            if (it.step > 0 && it.status != WizardStatus.Verifying) {
-                it.copy(step = it.step - 1, status = WizardStatus.Idle, error = null)
-            } else {
-                it
+        navigate {
+            when {
+                it.step > 0 -> it.copy(step = it.step - 1)
+                it.screen == WizardScreen.AppleQuick || it.screen == WizardScreen.AppleGuided -> it.copy(screen = WizardScreen.AppleChoice)
+                it.screen == WizardScreen.AppleChoice || it.screen == WizardScreen.PlayGuided -> it.copy(screen = WizardScreen.Chooser)
+                else -> it
             }
+        }
+    }
+
+    fun onDeveloperAccountIdChange(value: String) {
+        editUnlessVerifying {
+            if (looksLikePrivateKey(value)) it.copy(developerAccountId = "", error = PASTED_KEY_IN_ACCOUNT_ID)
+            else it.copy(developerAccountId = value.trim(), error = null)
         }
     }
 
@@ -123,7 +176,10 @@ class ConnectWizardViewModel(
     }
 
     fun onIssuerIdChange(value: String) {
-        editUnlessVerifying { it.copy(issuerId = value) }
+        editUnlessVerifying {
+            if (looksLikePrivateKey(value)) it.copy(issuerId = "", error = PASTED_KEY_IN_ISSUER_ID)
+            else it.copy(issuerId = value, error = null)
+        }
     }
 
     fun onPlayKeyFile(fileName: String, text: String) {
@@ -162,10 +218,11 @@ class ConnectWizardViewModel(
     fun verify() {
         val current = _state.value
         if (!current.canVerify) return
+        val store = current.store ?: return
         _state.update { it.copy(status = WizardStatus.Verifying, error = null) }
         viewModelScope.launch {
             try {
-                val status = when (current.store) {
+                val status = when (store) {
                     Store.AppStore -> verifyAppStore(current)
                     Store.GooglePlay -> verifyPlay(current)
                 }
@@ -173,7 +230,7 @@ class ConnectWizardViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(status = WizardStatus.Idle, error = e.userMessage(current.store)) }
+                _state.update { it.copy(status = WizardStatus.Idle, error = e.userMessage(store)) }
             }
         }
     }
@@ -196,6 +253,14 @@ class ConnectWizardViewModel(
 
     private fun showError(message: String) {
         editUnlessVerifying { it.copy(error = message) }
+    }
+
+    /** Moving between steps or screens clears errors and any Waiting state; nothing moves while verifying. */
+    private fun navigate(transform: (ConnectWizardState) -> ConnectWizardState) {
+        _state.update {
+            if (it.status == WizardStatus.Verifying) it
+            else transform(it).copy(status = WizardStatus.Idle, error = null)
+        }
     }
 
     /** The key files and IDs are in use while verifying, so edits made meanwhile are dropped. */

@@ -132,7 +132,7 @@ fun ConnectWizardScreen(
         file?.let { onKeyFile(it, Store.GooglePlay) }
     }
     // A drop goes to whichever store is shown when the file lands
-    val onDropped: (PlatformFile) -> Unit = { file -> onKeyFile(file, viewModel.state.value.store) }
+    val onDropped: (PlatformFile) -> Unit = { file -> onKeyFile(file, viewModel.state.value.store ?: Store.AppStore) }
 
     Column(
         // safeDrawing covers the system bars, display cutout and keyboard, so Close and Verify stay reachable
@@ -148,16 +148,15 @@ fun ConnectWizardScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             QuietButton(onClick = onBack) { Text(stringResource(Res.string.wizard_close)) }
-            StorePicker(state.store, enabled = state.status != WizardStatus.Verifying, onSelect = viewModel::selectStore)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                StepProgress(state.step)
+                StepProgress(state.step, state.stepCount)
                 Text(
-                    stringResource(Res.string.wizard_step_counter, state.store.displayName, state.step + 1, ConnectWizardState.STEP_COUNT),
+                    stringResource(Res.string.wizard_step_counter, (state.store ?: Store.AppStore).displayName, state.step + 1, state.stepCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            when (state.store) {
+            when (state.store ?: Store.AppStore) {
                 Store.AppStore -> AppStoreStep(state, viewModel, onPick = { p8Picker.launch() }, onDropped = onDropped)
                 Store.GooglePlay -> PlayStep(state, viewModel, onPick = { jsonPicker.launch() }, onDropped = onDropped)
             }
@@ -171,7 +170,7 @@ fun ConnectWizardScreen(
             }
             StatusNotice(state)
             Footer(state, viewModel)
-            TrustNote(state.store)
+            TrustNote(state.store ?: Store.AppStore)
         }
     }
 }
@@ -186,9 +185,9 @@ private fun StorePicker(selected: Store, enabled: Boolean, onSelect: (Store) -> 
 }
 
 @Composable
-private fun StepProgress(step: Int) {
+private fun StepProgress(step: Int, stepCount: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(ConnectWizardState.STEP_COUNT) { index ->
+        repeat(stepCount) { index ->
             Box(
                 Modifier
                     .weight(1f)
@@ -414,7 +413,7 @@ private fun StatusNotice(state: ConnectWizardState) {
     when (state.status) {
         WizardStatus.Verifying -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(stringResource(Res.string.wizard_checking, state.store.displayName), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(Res.string.wizard_checking, (state.store ?: Store.AppStore).displayName), style = MaterialTheme.typography.bodyMedium)
         }
         WizardStatus.Waiting -> Surface(
             color = AppgotchiTheme.colors.warningContainer,
