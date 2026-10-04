@@ -416,7 +416,11 @@ private fun StatusNotice(state: ConnectWizardState) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(stringResource(Res.string.wizard_checking, state.store.displayName), style = MaterialTheme.typography.bodyMedium)
         }
-        WizardStatus.Waiting -> Surface(color = AppgotchiTheme.colors.warningContainer, shape = MaterialTheme.shapes.medium) {
+        WizardStatus.Waiting -> Surface(
+            color = AppgotchiTheme.colors.warningContainer,
+            shape = MaterialTheme.shapes.medium,
+            border = BorderStroke(1.dp, AppgotchiTheme.colors.pending.copy(alpha = 0.3f)),
+        ) {
             Text(
                 stringResource(Res.string.play_waiting),
                 style = MaterialTheme.typography.bodyMedium,
