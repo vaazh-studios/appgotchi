@@ -6,6 +6,16 @@
     <string name="today_connect_button">Connect a store</string>
     <string name="today_refresh">Refresh</string>
     <string name="today_no_apps">No apps in this account yet.</string>
+    <string name="today_title">Today</string>
+    <plurals name="today_apps">
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <plurals name="today_stores">
+        <item quantity="one">%1$d store</item>
+        <item quantity="other">%1$d stores</item>
+    </plurals>
+    <string name="today_summary">%1$s across %2$s.</string>
 
     <string name="wizard_close">Close</string>
     <string name="wizard_store_app_store">App Store</string>
