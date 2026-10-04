@@ -1,5 +1,6 @@
 package com.vaazhstudios.appgotchi.screens.today
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import appgotchi.shared.generated.resources.Res
 import appgotchi.shared.generated.resources.today_apps
 import appgotchi.shared.generated.resources.today_connect_button
+import appgotchi.shared.generated.resources.today_demo_banner
+import appgotchi.shared.generated.resources.today_demo_exit
 import appgotchi.shared.generated.resources.today_empty_body
 import appgotchi.shared.generated.resources.today_empty_title
 import appgotchi.shared.generated.resources.today_loading
@@ -45,12 +49,14 @@ import appgotchi.shared.generated.resources.today_refresh
 import appgotchi.shared.generated.resources.today_stores
 import appgotchi.shared.generated.resources.today_summary
 import appgotchi.shared.generated.resources.today_title
+import appgotchi.shared.generated.resources.today_try_demo
 import com.vaazhstudios.appgotchi.core.data.StoreApp
 import com.vaazhstudios.appgotchi.data.StoreSection
 import com.vaazhstudios.appgotchi.data.displayName
 import com.vaazhstudios.appgotchi.ui.components.AppCard
 import com.vaazhstudios.appgotchi.ui.components.BrandMark
 import com.vaazhstudios.appgotchi.ui.components.PrimaryButton
+import com.vaazhstudios.appgotchi.ui.components.QuietButton
 import com.vaazhstudios.appgotchi.ui.components.SecondaryButton
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -74,13 +80,13 @@ fun TodayScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        TodayUiState.NoStores -> EmptyState(onConnect)
-        is TodayUiState.Loaded -> LoadedState(current.sections, onConnect, onRefresh = viewModel::refresh)
+        TodayUiState.NoStores -> EmptyState(onConnect, onTryDemo = viewModel::tryDemo)
+        is TodayUiState.Loaded -> LoadedState(current.sections, current.isDemo, onConnect, onRefresh = viewModel::refresh, onExitDemo = viewModel::exitDemo)
     }
 }
 
 @Composable
-private fun EmptyState(onConnect: () -> Unit) {
+private fun EmptyState(onConnect: () -> Unit, onTryDemo: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
@@ -103,11 +109,18 @@ private fun EmptyState(onConnect: () -> Unit) {
             )
         }
         PrimaryButton(onClick = onConnect) { Text(stringResource(Res.string.today_connect_button)) }
+        QuietButton(onClick = onTryDemo) { Text(stringResource(Res.string.today_try_demo)) }
     }
 }
 
 @Composable
-private fun LoadedState(sections: List<StoreSection>, onConnect: () -> Unit, onRefresh: () -> Unit) {
+private fun LoadedState(
+    sections: List<StoreSection>,
+    isDemo: Boolean,
+    onConnect: () -> Unit,
+    onRefresh: () -> Unit,
+    onExitDemo: () -> Unit,
+) {
     val appCount = sections.sumOf { it.apps.size }
     LazyColumn(
         modifier = Modifier.fillMaxSize().safeDrawingPadding(),
@@ -115,6 +128,29 @@ private fun LoadedState(sections: List<StoreSection>, onConnect: () -> Unit, onR
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (isDemo) {
+            item(key = "demo-banner") {
+                Surface(
+                    modifier = Modifier.widthIn(max = ContentWidth).fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(Res.string.today_demo_banner),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.weight(1f),
+                        )
+                        QuietButton(onClick = onExitDemo) { Text(stringResource(Res.string.today_demo_exit)) }
+                    }
+                }
+            }
+        }
         item(key = "header") {
             Column(Modifier.widthIn(max = ContentWidth).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 BrandMark()
@@ -141,7 +177,9 @@ private fun LoadedState(sections: List<StoreSection>, onConnect: () -> Unit, onR
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SecondaryButton(onClick = onRefresh) { Text(stringResource(Res.string.today_refresh)) }
+                        if (!isDemo) {
+                            SecondaryButton(onClick = onRefresh) { Text(stringResource(Res.string.today_refresh)) }
+                        }
                         PrimaryButton(onClick = onConnect) { Text(stringResource(Res.string.today_connect_button)) }
                     }
                 }

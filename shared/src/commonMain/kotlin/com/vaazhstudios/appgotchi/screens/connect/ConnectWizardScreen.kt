@@ -6,7 +6,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -42,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -62,10 +61,14 @@ import com.vaazhstudios.appgotchi.data.displayName
 import com.vaazhstudios.appgotchi.data.hasExtension
 import com.vaazhstudios.appgotchi.data.keyIdFromFileName
 import com.vaazhstudios.appgotchi.ui.components.AppCard
+import com.vaazhstudios.appgotchi.ui.components.ChecklistItem
+import com.vaazhstudios.appgotchi.ui.components.ChoiceCard
+import com.vaazhstudios.appgotchi.ui.components.HelpDisclosure
+import com.vaazhstudios.appgotchi.ui.components.PasteField
 import com.vaazhstudios.appgotchi.ui.components.PrimaryButton
 import com.vaazhstudios.appgotchi.ui.components.QuietButton
 import com.vaazhstudios.appgotchi.ui.components.SecondaryButton
-import com.vaazhstudios.appgotchi.ui.components.SegmentedControl
+import com.vaazhstudios.appgotchi.ui.components.StepChecklist
 import com.vaazhstudios.appgotchi.ui.components.appTextFieldColors
 import com.vaazhstudios.appgotchi.ui.components.focusRing
 import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
@@ -83,15 +86,20 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val TEAM_KEYS_URL = "https://appstoreconnect.apple.com/access/integrations/api"
-private const val ENABLE_REPORTING_API_URL =
-    "https://console.cloud.google.com/apis/library/playdeveloperreporting.googleapis.com"
-private const val SERVICE_ACCOUNTS_URL = "https://console.cloud.google.com/iam-admin/serviceaccounts"
 private const val PLAY_CONSOLE_URL = "https://play.google.com/console/u/0/developers"
+private const val CREATE_PROJECT_URL = "https://console.cloud.google.com/projectcreate"
+private const val REPORTING_API_URL = "https://console.cloud.google.com/apis/library/playdeveloperreporting.googleapis.com"
+private const val ANDROID_PUBLISHER_API_URL = "https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com"
+private const val CREATE_SERVICE_ACCOUNT_URL = "https://console.cloud.google.com/iam-admin/serviceaccounts/create"
+
+private fun usersAndPermissionsUrl(developerAccountId: String) =
+    "https://play.google.com/console/u/0/developers/$developerAccountId/users-and-permissions"
 
 @Composable
 fun ConnectWizardScreen(
     onConnected: () -> Unit,
     onBack: () -> Unit,
+    onTryDemo: () -> Unit,
     viewModel: ConnectWizardViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -147,79 +155,116 @@ fun ConnectWizardScreen(
             modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            QuietButton(onClick = onBack) { Text(stringResource(Res.string.wizard_close)) }
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                StepProgress(state.step, state.stepCount)
-                Text(
-                    stringResource(Res.string.wizard_step_counter, (state.store ?: Store.AppStore).displayName, state.step + 1, state.stepCount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            QuietButton(onClick = onBack) { Text(stringResource(Res.string.wizard_back_to_today)) }
+            when (state.screen) {
+                WizardScreen.Chooser -> StoreChooser(onChoose = viewModel::chooseStore, onTryDemo = onTryDemo)
+                WizardScreen.AppleChoice -> AppleChoice(viewModel)
+                WizardScreen.AppleQuick -> {
+                    StepHeading(Res.string.apple_quick_title, null)
+                    AppleKeyFile(state, viewModel, onPick = { p8Picker.launch() }, onDropped = onDropped)
+                    IssuerIdField(state, viewModel)
+                }
+                WizardScreen.AppleGuided -> {
+                    StepProgress(state)
+                    AppleGuidedStep(state, viewModel, onPick = { p8Picker.launch() }, onDropped = onDropped)
+                }
+                WizardScreen.PlayGuided -> {
+                    StepProgress(state)
+                    PlayGuidedStep(state, viewModel, onPick = { jsonPicker.launch() }, onDropped = onDropped)
+                }
             }
-            when (state.store ?: Store.AppStore) {
-                Store.AppStore -> AppStoreStep(state, viewModel, onPick = { p8Picker.launch() }, onDropped = onDropped)
-                Store.GooglePlay -> PlayStep(state, viewModel, onPick = { jsonPicker.launch() }, onDropped = onDropped)
+            if (state.screen != WizardScreen.Chooser) {
+                state.error?.let {
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+                StatusNotice(state)
+                Footer(state, viewModel)
             }
-            state.error?.let {
-                Text(
-                    it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                )
-            }
-            StatusNotice(state)
-            Footer(state, viewModel)
-            TrustNote(state.store ?: Store.AppStore)
+            TrustNote(state.store)
         }
     }
 }
 
 @Composable
-private fun StorePicker(selected: Store, enabled: Boolean, onSelect: (Store) -> Unit) {
-    val options = listOf(
-        Store.AppStore to stringResource(Res.string.wizard_store_app_store),
-        Store.GooglePlay to stringResource(Res.string.wizard_store_google_play),
-    )
-    SegmentedControl(options = options, selected = selected, onSelect = onSelect, enabled = enabled, modifier = Modifier.fillMaxWidth())
-}
-
-@Composable
-private fun StepProgress(step: Int, stepCount: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(stepCount) { index ->
-            Box(
-                Modifier
-                    .weight(1f)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(if (index <= step) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outlineVariant),
-            )
+private fun StepProgress(state: ConnectWizardState) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(state.stepCount) { index ->
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(if (index <= state.step) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outlineVariant),
+                )
+            }
         }
+        Text(
+            stringResource(Res.string.wizard_step_counter, state.store?.displayName ?: "", state.step + 1, state.stepCount),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
-private fun StepHeading(title: StringResource, body: StringResource) {
+private fun StepHeading(title: StringResource, body: StringResource?) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(title), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
-        Text(stringResource(body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        body?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 
 @Composable
-private fun ExternalLinks(vararg links: Pair<StringResource, String>) {
-    val uriHandler = LocalUriHandler.current
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        links.forEach { (label, url) ->
-            // Opening a browser can fail (no handler, unsupported desktop); never crash over it
-            SecondaryButton(onClick = { runCatching { uriHandler.openUri(url) } }) { Text(stringResource(label)) }
-        }
+private fun StoreChooser(onChoose: (Store) -> Unit, onTryDemo: () -> Unit) {
+    StepHeading(Res.string.chooser_title, Res.string.chooser_body)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ChoiceCard(
+            title = stringResource(Res.string.chooser_apple_title),
+            description = stringResource(Res.string.chooser_apple_body),
+            badge = "A",
+            onClick = { onChoose(Store.AppStore) },
+        )
+        ChoiceCard(
+            title = stringResource(Res.string.chooser_play_title),
+            description = stringResource(Res.string.chooser_play_body),
+            badge = "G",
+            onClick = { onChoose(Store.GooglePlay) },
+        )
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(Res.string.chooser_demo_prompt), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SecondaryButton(onClick = onTryDemo) { Text(stringResource(Res.string.chooser_demo_button)) }
     }
 }
 
 @Composable
-private fun AppStoreStep(
+private fun AppleChoice(viewModel: ConnectWizardViewModel) {
+    StepHeading(Res.string.apple_choice_title, Res.string.apple_choice_body)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ChoiceCard(
+            title = stringResource(Res.string.apple_choice_have_title),
+            description = stringResource(Res.string.apple_choice_have_body),
+            badge = "1",
+            onClick = viewModel::chooseAppleQuick,
+        )
+        ChoiceCard(
+            title = stringResource(Res.string.apple_choice_create_title),
+            description = stringResource(Res.string.apple_choice_create_body),
+            badge = "3",
+            onClick = viewModel::chooseAppleGuided,
+        )
+    }
+}
+
+@Composable
+private fun AppleGuidedStep(
     state: ConnectWizardState,
     viewModel: ConnectWizardViewModel,
     onPick: () -> Unit,
@@ -227,53 +272,28 @@ private fun AppStoreStep(
 ) {
     when (state.step) {
         0 -> {
-            StepHeading(Res.string.apple_step1_title, Res.string.apple_step1_body)
-            ExternalLinks(Res.string.apple_open_team_keys to TEAM_KEYS_URL)
+            StepHeading(Res.string.apple_guided1_title, Res.string.apple_guided1_body)
+            StepChecklist(
+                listOf(
+                    ChecklistItem(stringResource(Res.string.apple_guided1_item1), linkLabel = stringResource(Res.string.link_open_team_keys), url = TEAM_KEYS_URL),
+                    ChecklistItem(stringResource(Res.string.apple_guided1_item2), note = stringResource(Res.string.apple_guided1_item2_note)),
+                    ChecklistItem(stringResource(Res.string.apple_guided1_item3)),
+                ),
+            )
         }
         1 -> {
             StepHeading(Res.string.apple_step2_title, Res.string.apple_step2_body)
-            KeyFileField(
-                fileName = state.appleKeyFile?.name,
-                detail = null,
-                label = Res.string.apple_file_label,
-                onPick = onPick,
-                onDropped = onDropped,
-                onRemove = viewModel::removeAppleKeyFile,
-            )
-            if (state.appleKeyFile != null) {
-                val fromFileName = keyIdFromFileName(state.appleKeyFile.name) == state.keyId
-                OutlinedTextField(
-                    value = state.keyId,
-                    onValueChange = viewModel::onKeyIdChange,
-                    label = { Text(stringResource(Res.string.apple_key_id)) },
-                    supportingText = {
-                        Text(stringResource(if (fromFileName) Res.string.apple_key_id_from_file else Res.string.apple_key_id_manual))
-                    },
-                    singleLine = true,
-                    colors = appTextFieldColors(),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            AppleKeyFile(state, viewModel, onPick, onDropped)
         }
         else -> {
             StepHeading(Res.string.apple_step3_title, Res.string.apple_step3_body)
-            OutlinedTextField(
-                value = state.issuerId,
-                onValueChange = viewModel::onIssuerIdChange,
-                label = { Text(stringResource(Res.string.apple_issuer_id)) },
-                singleLine = true,
-                enabled = state.status != WizardStatus.Verifying,
-                colors = appTextFieldColors(),
-                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            IssuerIdField(state, viewModel)
         }
     }
 }
 
 @Composable
-private fun PlayStep(
+private fun PlayGuidedStep(
     state: ConnectWizardState,
     viewModel: ConnectWizardViewModel,
     onPick: () -> Unit,
@@ -281,14 +301,43 @@ private fun PlayStep(
 ) {
     when (state.step) {
         0 -> {
-            StepHeading(Res.string.play_step1_title, Res.string.play_step1_body)
-            ExternalLinks(
-                Res.string.play_enable_api to ENABLE_REPORTING_API_URL,
-                Res.string.play_service_accounts to SERVICE_ACCOUNTS_URL,
+            StepHeading(Res.string.play_s1_title, Res.string.play_s1_body)
+            StepChecklist(
+                listOf(
+                    ChecklistItem(stringResource(Res.string.play_s1_item1), linkLabel = stringResource(Res.string.link_open_play_console), url = PLAY_CONSOLE_URL),
+                    ChecklistItem(stringResource(Res.string.play_s1_item2)),
+                ),
+            )
+            PasteField(
+                value = state.developerAccountId,
+                onValueChange = viewModel::onDeveloperAccountIdChange,
+                label = stringResource(Res.string.play_account_id),
+                error = state.developerAccountIdError,
             )
         }
         1 -> {
-            StepHeading(Res.string.play_step2_title, Res.string.play_step2_body)
+            StepHeading(Res.string.play_s2_title, Res.string.play_s2_body)
+            StepChecklist(
+                listOf(
+                    ChecklistItem(stringResource(Res.string.play_s2_item1), linkLabel = stringResource(Res.string.link_open_cloud_console), url = CREATE_PROJECT_URL),
+                    ChecklistItem(stringResource(Res.string.play_s2_item2), linkLabel = stringResource(Res.string.link_enable), url = REPORTING_API_URL),
+                    ChecklistItem(stringResource(Res.string.play_s2_item3), note = stringResource(Res.string.play_s2_item3_note), linkLabel = stringResource(Res.string.link_enable), url = ANDROID_PUBLISHER_API_URL),
+                ),
+            )
+        }
+        2 -> {
+            StepHeading(Res.string.play_s3_title, Res.string.play_s3_body)
+            StepChecklist(
+                listOf(
+                    ChecklistItem(stringResource(Res.string.play_s3_item1), linkLabel = stringResource(Res.string.link_create_account), url = CREATE_SERVICE_ACCOUNT_URL),
+                    ChecklistItem(stringResource(Res.string.play_s3_item2)),
+                    ChecklistItem(stringResource(Res.string.play_s3_item3)),
+                ),
+            )
+            HelpDisclosure(stringResource(Res.string.play_s3_help_title), stringResource(Res.string.play_s3_help_body))
+        }
+        3 -> {
+            StepHeading(Res.string.play_s4_title, Res.string.play_s4_body)
             KeyFileField(
                 fileName = state.playKeyFile?.name,
                 detail = if (state.playKeyFile != null) stringResource(Res.string.play_file_added) else null,
@@ -299,12 +348,65 @@ private fun PlayStep(
             )
             state.serviceAccountEmail?.let { EmailRow(it) }
         }
-        else -> {
-            StepHeading(Res.string.play_step3_title, Res.string.play_step3_body)
+        4 -> {
+            StepHeading(Res.string.play_s5_title, Res.string.play_s5_body)
             state.serviceAccountEmail?.let { EmailRow(it) }
-            ExternalLinks(Res.string.play_open_console to PLAY_CONSOLE_URL)
+            StepChecklist(
+                listOf(
+                    ChecklistItem(stringResource(Res.string.play_s5_item1), linkLabel = stringResource(Res.string.link_open_users), url = usersAndPermissionsUrl(state.developerAccountId)),
+                    ChecklistItem(stringResource(Res.string.play_s5_item2)),
+                    ChecklistItem(stringResource(Res.string.play_s5_item3), note = stringResource(Res.string.play_s5_item3_note)),
+                ),
+            )
+        }
+        else -> StepHeading(Res.string.play_s6_title, Res.string.play_s6_body)
+    }
+}
+
+/** The .p8 drop zone plus the Key ID field once a file is added; shared by the quick path and guided step 2. */
+@Composable
+private fun AppleKeyFile(
+    state: ConnectWizardState,
+    viewModel: ConnectWizardViewModel,
+    onPick: () -> Unit,
+    onDropped: (PlatformFile) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        KeyFileField(
+            fileName = state.appleKeyFile?.name,
+            detail = null,
+            label = Res.string.apple_file_label,
+            onPick = onPick,
+            onDropped = onDropped,
+            onRemove = viewModel::removeAppleKeyFile,
+        )
+        if (state.appleKeyFile != null) {
+            val fromFileName = keyIdFromFileName(state.appleKeyFile.name) == state.keyId
+            OutlinedTextField(
+                value = state.keyId,
+                onValueChange = viewModel::onKeyIdChange,
+                label = { Text(stringResource(Res.string.apple_key_id)) },
+                supportingText = {
+                    Text(stringResource(if (fromFileName) Res.string.apple_key_id_from_file else Res.string.apple_key_id_manual))
+                },
+                singleLine = true,
+                colors = appTextFieldColors(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrectEnabled = false),
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
+}
+
+@Composable
+private fun IssuerIdField(state: ConnectWizardState, viewModel: ConnectWizardViewModel) {
+    PasteField(
+        value = state.issuerId,
+        onValueChange = viewModel::onIssuerIdChange,
+        label = stringResource(Res.string.apple_issuer_id),
+        error = state.issuerIdError,
+        enabled = state.status != WizardStatus.Verifying,
+    )
 }
 
 @Composable
@@ -434,27 +536,27 @@ private fun StatusNotice(state: ConnectWizardState) {
 @Composable
 private fun Footer(state: ConnectWizardState, viewModel: ConnectWizardViewModel) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        if (state.step > 0) {
-            QuietButton(onClick = viewModel::back, enabled = state.status != WizardStatus.Verifying) {
-                Text(stringResource(Res.string.wizard_back))
-            }
+        QuietButton(onClick = viewModel::back, enabled = state.status != WizardStatus.Verifying) {
+            Text(stringResource(Res.string.wizard_back))
         }
         Spacer(Modifier.weight(1f))
-        if (state.isLastStep) {
-            val label = when {
-                state.status == WizardStatus.Waiting -> Res.string.wizard_check_again
-                state.store == Store.AppStore -> Res.string.apple_verify
-                else -> Res.string.play_verify
+        when {
+            state.screen == WizardScreen.AppleChoice -> Unit
+            state.screen == WizardScreen.AppleQuick || state.isLastStep -> {
+                val label = when {
+                    state.status == WizardStatus.Waiting -> Res.string.wizard_check_again
+                    state.store == Store.AppStore -> Res.string.apple_verify
+                    else -> Res.string.play_verify
+                }
+                PrimaryButton(onClick = viewModel::verify, enabled = state.canVerify) { Text(stringResource(label)) }
             }
-            PrimaryButton(onClick = viewModel::verify, enabled = state.canVerify) { Text(stringResource(label)) }
-        } else {
-            PrimaryButton(onClick = viewModel::next, enabled = state.canContinue) { Text(stringResource(Res.string.wizard_continue)) }
+            else -> PrimaryButton(onClick = viewModel::next, enabled = state.canContinue) { Text(stringResource(Res.string.wizard_continue)) }
         }
     }
 }
 
 @Composable
-private fun TrustNote(store: Store) {
+private fun TrustNote(store: Store?) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(
             Icons.Default.Lock,
@@ -463,7 +565,13 @@ private fun TrustNote(store: Store) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            stringResource(if (store == Store.AppStore) Res.string.wizard_trust_apple else Res.string.wizard_trust_play),
+            stringResource(
+                when (store) {
+                    Store.AppStore -> Res.string.wizard_trust_apple
+                    Store.GooglePlay -> Res.string.wizard_trust_play
+                    null -> Res.string.wizard_trust_both
+                },
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -8,10 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.vaazhstudios.appgotchi.data.DemoMode
 import com.vaazhstudios.appgotchi.screens.connect.ConnectWizardScreen
 import com.vaazhstudios.appgotchi.screens.today.TodayScreen
 import com.vaazhstudios.appgotchi.ui.theme.AppgotchiTheme
 import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 
 @Serializable
 object TodayDestination
@@ -24,6 +26,7 @@ fun App() {
     AppgotchiTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val navController = rememberNavController()
+            val demoMode: DemoMode = koinInject()
             NavHost(navController = navController, startDestination = TodayDestination) {
                 composable<TodayDestination> {
                     TodayScreen(onConnect = { navController.navigate(ConnectDestination) })
@@ -34,6 +37,10 @@ fun App() {
                     ConnectWizardScreen(
                         onConnected = { navController.popBackStack<ConnectDestination>(inclusive = true) },
                         onBack = { navController.popBackStack<ConnectDestination>(inclusive = true) },
+                        onTryDemo = {
+                            demoMode.enable()
+                            navController.popBackStack<ConnectDestination>(inclusive = true)
+                        },
                     )
                 }
             }
